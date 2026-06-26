@@ -7,14 +7,21 @@
     <style>
         body { font-family: sans-serif; margin: 0; padding: 20px; background-color: #f4f4f4; }
         h1 { color: #333; font-size: 20px; border-bottom: 2px solid #06C755; padding-bottom: 10px; }
-        .container { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        #loading { text-align: center; margin-top: 50px; }
+        .container { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        #loading { text-align: center; margin-top: 50px; font-weight: bold; }
         #admin-view, #user-view { display: none; }
         .role-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; color: white; margin-bottom: 10px; }
         .role-admin { background-color: #f44336; }
         .role-user { background-color: #06C755; }
-        button { background-color: #06C755; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-size: 16px; width: 100%; margin-top: 10px; }
+        
+        /* フォーム用のスタイル */
+        .form-group { margin-bottom: 15px; text-align: left; }
+        .form-group label { display: block; font-size: 14px; color: #666; margin-bottom: 5px; font-weight: bold; }
+        .form-group input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-size: 16px; }
+        
+        button { background-color: #06C755; color: white; border: none; padding: 12px 20px; border-radius: 5px; cursor: pointer; font-size: 16px; width: 100%; margin-top: 10px; font-weight: bold; }
         button:active { opacity: 0.8; }
+        .btn-sub { background-color: #777; margin-top: 20px; font-size: 14px; padding: 8px; }
     </style>
 </head>
 <body>
@@ -32,28 +39,46 @@
     <div id="admin-view" class="container">
         <div class="role-badge role-admin">会計 (管理者)</div>
         <h1>こんにちは、<span class="user-name"></span> さん</h1>
-        <p>【管理者メニュー】</p>
-        <button onclick="alert('まだ作っていません')">集金状況を確認する</button>
-        <button onclick="alert('まだ作っていません')">新しい飲み会を登録する</button>
-        <button style="background-color: #777; margin-top: 30px;" onclick="switchToUserView()">メンバー画面として表示</button>
+        
+        <div style="background: #fdfdfd; padding: 15px; border: 1px dashed #ccc; border-radius: 8px; margin-top: 15px;">
+            <h3 style="margin-top: 0; color: #333;">🍻 新しい飲み会の登録</h3>
+            
+            <div class="form-group">
+                <label>イベント名</label>
+                <input type="text" id="event-name" placeholder="例：6月度 飲み会">
+            </div>
+            <div class="form-group">
+                <label>開催日</label>
+                <input type="date" id="event-date">
+            </div>
+            <div class="form-group">
+                <label>会費 (円)</label>
+                <input type="number" id="event-amount" placeholder="例：4000">
+            </div>
+            
+            <button onclick="submitNewEvent()">この内容で集金を開始する</button>
+        </div>
+
+        <button class="btn-sub" onclick="switchToUserView()">メンバー画面として表示</button>
     </div>
 
     <script>
         const MY_LIFF_ID = "2010432252-75FYrhvD"; 
-        // 【重要】あなたのGASの「ウェブアプリURL」をここに貼り付けます
+        // ⚠️【超重要】あなたのGASの「ウェブアプリURL」をここに貼り付け直してください
         const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxFs7FRgENnnx8YlFVjFrX57hpGlOYO4L1acSHX0upyrKRT_Nr7EYO-8UJB1pzcuzwH/exec"; 
 
-        // アプリ起動
+        // LIFFアプリ起動
         liff.init({ liffId: MY_LIFF_ID })
             .then(() => {
                 if (!liff.isLoggedIn()) {
                     liff.login();
                 } else {
                     liff.getProfile().then(profile => {
-                        // Googleの箱をすり抜け、普通のネット通信（fetch）でGASにデータを送る！
+                        // GAS側に「アクション：ログイン」としてデータを送る
                         fetch(GAS_WEB_APP_URL, {
                             method: "POST",
                             body: JSON.stringify({
+                                action: 'login',
                                 userId: profile.userId,
                                 displayName: profile.displayName
                             })
@@ -63,11 +88,11 @@
                             if(response.success) {
                                 onLoginSuccess(response.data);
                             } else {
-                                document.body.innerHTML = "GAS処理エラー: " + response.error;
+                                alert("GAS処理エラー: " + response.error);
                             }
                         })
                         .catch(err => {
-                            document.body.innerHTML = "通信エラー: " + err;
+                            alert("通信エラー: " + err);
                         });
                     });
                 }
@@ -76,6 +101,7 @@
                 document.body.innerHTML = "初期化エラー: " + err;
             });
 
+        // ログイン成功時の画面切り替え
         function onLoginSuccess(userInfo) {
             document.getElementById('loading').style.display = 'none';
             const nameElements = document.getElementsByClassName('user-name');
@@ -87,6 +113,55 @@
                 document.getElementById('admin-view').style.display = 'block';
             } else {
                 document.getElementById('user-view').style.display = 'block';
+            }
+        }
+
+        // ★新機能：イベント登録ボタンが押されたときの処理
+        function submitNewEvent() {
+            const name = document.getElementById('event-name').value;
+            const date = document.getElementById('event-date').value;
+            const amount = document.getElementById('event-amount').value;
+
+            if (!name || !date || !amount) {
+                alert("すべての項目を入力してください！");
+                return;
+            }
+
+            if (confirm(`「${name}」を登録し、メンバー全員の集金データを作成します。よろしいですか？`)) {
+                document.getElementById('loading').style.display = 'block';
+                document.getElementById('loading').innerText = "スプレッドシートに書き込み中...";
+                document.getElementById('admin-view').style.display = 'none';
+
+                // GAS側に「アクション：イベント作成」としてデータを飛ばす！
+                fetch(GAS_WEB_APP_URL, {
+                    method: "POST",
+                    body: JSON.stringify({
+                        action: 'createEvent',
+                        eventName: name,
+                        eventDate: date,
+                        amount: amount
+                    })
+                })
+                .then(res => res.json())
+                .then(response => {
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('admin-view').style.display = 'block';
+                    
+                    if(response.success) {
+                        alert(`登録完了！\nイベントID: ${response.data.eventId}\n在籍メンバー ${response.data.memberCount} 名分の未払データを作成しました！`);
+                        // 入力欄を空っぽにする
+                        document.getElementById('event-name').value = "";
+                        document.getElementById('event-date').value = "";
+                        document.getElementById('event-amount').value = "";
+                    } else {
+                        alert("登録エラー: " + response.error);
+                    }
+                })
+                .catch(err => {
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('admin-view').style.display = 'block';
+                    alert("通信エラー: " + err);
+                });
             }
         }
         
