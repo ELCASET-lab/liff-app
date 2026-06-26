@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>5日会集金アプリ</title>
+    <title>5日会集集金アプリ</title>
     <script src="https://static.line-scdn.net/liff/edge/versions/2.22.3/sdk.js"></script>
     <style>
         body { font-family: sans-serif; margin: 0; padding: 20px; background-color: #f4f4f4; }
@@ -22,11 +22,15 @@
         button:active { opacity: 0.8; }
         .btn-sub { background-color: #777; margin-top: 20px; font-size: 14px; padding: 8px; }
         
-        /* リスト用のスタイル */
-        .unpaid-list { list-style: none; padding: 0; margin: 0; }
-        .unpaid-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #eee; background: #fff; }
-        .unpaid-info { font-size: 14px; color: #333; line-height: 1.4; }
-        .btn-collect { width: auto; margin-top: 0; padding: 6px 15px; font-size: 14px; background-color: #ff9800; }
+        /* リスト・履歴用の共通スタイル */
+        .unpaid-list, .history-list { list-style: none; padding: 0; margin: 0; }
+        .unpaid-item, .history-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #eee; background: #fff; }
+        .unpaid-info, .history-info { font-size: 14px; color: #333; line-height: 1.4; }
+        
+        /* ボタン色分け */
+        .btn-actions { display: flex; gap: 5px; }
+        .btn-collect { width: auto; margin-top: 0; padding: 6px 12px; font-size: 13px; background-color: #ff9800; }
+        .btn-absence { width: auto; margin-top: 0; padding: 6px 12px; font-size: 13px; background-color: #2196F3; }
     </style>
 </head>
 <body>
@@ -36,9 +40,17 @@
     <div id="user-view" class="container">
         <div class="role-badge role-user">メンバー</div>
         <h1>こんにちは、<span class="user-name"></span> さん</h1>
-        <p>あなたの次回の支払額は...</p>
+        <p>あなたの現在の未払合計額は...</p>
         <div id="unpaid-amount" style="font-size: 36px; font-weight: bold; color: #f44336; text-align: center; margin: 20px 0;">0 円</div>
-        <button onclick="liff.closeWindow()">閉じる</button>
+        
+        <div style="margin-top: 30px;">
+            <h3 style="color: #333; margin-bottom: 10px; font-size: 16px;">📊 あなたの支払い履歴（済）</h3>
+            <div id="history-container" style="background: #fff; border: 1px solid #ccc; border-radius: 8px; max-height: 200px; overflow-y: auto;">
+                <p style="padding: 15px; color: #888; text-align: center; margin: 0;">履歴はありません</p>
+            </div>
+        </div>
+        
+        <button class="btn-sub" onclick="liff.closeWindow()">アプリを閉じる</button>
     </div>
 
     <div id="admin-view" class="container">
@@ -46,14 +58,14 @@
         <h1>こんにちは、<span class="user-name"></span> さん</h1>
         
         <div style="margin-top: 20px;">
-            <h3 style="color: #333; margin-bottom: 10px;">💰 現在の未払メンバー一覧</h3>
+            <h3 style="color: #333; margin-bottom: 10px; font-size: 16px;">💰 現在の未払・欠席保留一覧</h3>
             <div id="unpaid-list-container" style="background: #fff; border: 1px solid #ccc; border-radius: 8px; max-height: 250px; overflow-y: auto;">
                 <p style="padding: 15px; color: #888; text-align: center; margin: 0;">未払いのメンバーはいません</p>
             </div>
         </div>
 
         <div style="background: #fdfdfd; padding: 15px; border: 1px dashed #ccc; border-radius: 8px; margin-top: 20px;">
-            <h3 style="margin-top: 0; color: #333;">🍻 新しい飲み会の登録</h3>
+            <h3 style="margin-top: 0; color: #333; font-size: 16px;">🍻 新しい飲み会の登録</h3>
             <div class="form-group">
                 <label>イベント名</label>
                 <input type="text" id="event-name" placeholder="例：6月度 飲み会">
@@ -64,8 +76,7 @@
             </div>
             <div class="form-group">
                 <label>会費 (円)</label>
-                <input type="number" id="event-amount" placeholder="例：4000">
-            </div>
+                <input type="number" id="event-amount" value="5000"> </div>
             <button onclick="submitNewEvent()">この内容で集金を開始する</button>
         </div>
 
@@ -117,18 +128,45 @@
                 nameElements[i].innerText = userInfo.name;
             }
 
+            // 金額表示
             document.getElementById('unpaid-amount').innerText = Number(userInfo.totalAmount).toLocaleString() + " 円";
+
+            // ★新機能：本人の支払い履歴を生成して表示
+            renderHistory(userInfo.history);
 
             if (userInfo.role === 'admin') {
                 document.getElementById('admin-view').style.display = 'block';
-                // 管理者の場合は未払リストを読み込む
                 loadUnpaidList();
             } else {
                 document.getElementById('user-view').style.display = 'block';
             }
         }
 
-        // ★新機能：未払リストをGASから取得して画面に表示する
+        // ★新機能：個人の履歴を画面に描画する
+        function renderHistory(historyItems) {
+            const historyContainer = document.getElementById('history-container');
+            if(!historyItems || historyItems.length === 0) {
+                historyContainer.innerHTML = '<p style="padding: 15px; color: #888; text-align: center; margin: 0;">履歴はありません</p>';
+                return;
+            }
+            let html = '<ul class="history-list">';
+            historyItems.forEach(item => {
+                let dateStr = item.eventDate ? new Date(item.eventDate).toLocaleDateString('ja-JP') : "";
+                html += `
+                    <li class="history-item">
+                        <div class="history-info">
+                            <strong>${item.eventName}</strong><br>
+                            <span style="font-size:12px; color:#666;">${dateStr}</span>
+                        </div>
+                        <div style="font-weight:bold; color:#06C755;">${Number(item.amount).toLocaleString()} 円</div>
+                    </li>
+                `;
+            });
+            html += '</ul>';
+            historyContainer.innerHTML = html;
+        }
+
+        // 未払リストを取得（「回収」と「欠席」の2つのボタンを配置）
         function loadUnpaidList() {
             fetch(GAS_WEB_APP_URL, {
                 method: "POST",
@@ -153,7 +191,10 @@
                                     <strong>${item.memberName} さん</strong><br>
                                     <span style="font-size:12px; color:#666;">${item.eventName} (${Number(item.amount).toLocaleString()}円)</span>
                                 </div>
-                                <button class="btn-collect" onclick="collectPayment('${item.paymentId}', '${item.memberName}', ${item.amount})">回収</button>
+                                <div class="btn-actions">
+                                    <button class="btn-collect" onclick="collectPayment('${item.paymentId}', '${item.memberName}', ${item.amount})">回収</button>
+                                    <button class="btn-absence" onclick="collectAbsence('${item.paymentId}', '${item.memberName}')">欠席</button>
+                                </div>
                             </li>
                         `;
                     });
@@ -163,7 +204,7 @@
             });
         }
 
-        // ★新機能：「回収」ボタンが押されたときの処理
+        // 「回収」ボタン処理
         function collectPayment(paymentId, name, amount) {
             if (confirm(`${name} さんから ${amount} 円を回収しましたか？\nスプレッドシートを「済」に更新します。`)) {
                 document.getElementById('loading').style.display = 'block';
@@ -171,26 +212,40 @@
                 
                 fetch(GAS_WEB_APP_URL, {
                     method: "POST",
-                    body: JSON.stringify({
-                        action: 'recordPayment',
-                        paymentId: paymentId
-                    })
+                    body: JSON.stringify({ action: 'recordPayment', paymentId: paymentId })
                 })
                 .then(res => res.json())
                 .then(response => {
                     document.getElementById('loading').style.display = 'none';
                     if (response.success) {
                         alert("回収を記録しました！");
-                        // 画面のリストを最新にリロード
-                        loadUnpaidList();
-                        // 自分の未払表示も更新するため、一瞬loadingを挟んで再表示させる処理を模倣（簡易的にテキスト変更でも可ですが、リロードが確実）
+                        location.reload(); // 金額と履歴も全部一発で最新にするため、画面をリロード
                     } else {
                         alert("エラー: " + response.error);
                     }
+                });
+            }
+        }
+
+        // ★新機能：「欠席」ボタン処理
+        function collectAbsence(paymentId, name) {
+            if (confirm(`${name} さんは今回「欠席」ですか？\n請求金額を積立分（2,000円）に変更し、未払いのまま次回に繰り越します。`)) {
+                document.getElementById('loading').style.display = 'block';
+                document.getElementById('loading').innerText = "欠席データを処理中...";
+                
+                fetch(GAS_WEB_APP_URL, {
+                    method: "POST",
+                    body: JSON.stringify({ action: 'recordAbsence', paymentId: paymentId })
                 })
-                .catch(err => {
+                .then(res => res.json())
+                .then(response => {
                     document.getElementById('loading').style.display = 'none';
-                    alert("通信エラー: " + err);
+                    if (response.success) {
+                        alert("欠席（積立金保留）を記録しました！");
+                        location.reload(); // 画面をリロードしてリストを最新に
+                    } else {
+                        alert("エラー: " + response.error);
+                    }
                 });
             }
         }
@@ -229,16 +284,10 @@
                         alert(`登録完了！\n未払データを作成しました！`);
                         document.getElementById('event-name').value = "";
                         document.getElementById('event-date').value = "";
-                        document.getElementById('event-amount').value = "";
-                        loadUnpaidList(); // リストを更新
+                        loadUnpaidList();
                     } else {
                         alert("登録エラー: " + response.error);
                     }
-                })
-                .catch(err => {
-                    document.getElementById('loading').style.display = 'none';
-                    document.getElementById('admin-view').style.display = 'block';
-                    alert("通信エラー: " + err);
                 });
             }
         }
