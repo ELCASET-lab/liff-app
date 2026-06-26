@@ -6,44 +6,34 @@
     <title>5日会集金アプリ</title>
     <script src="https://static.line-scdn.net/liff/edge/versions/2.22.3/sdk.js"></script>
     <style>
-        /* 全体の文字サイズと余白をスマホ用に拡大 */
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; margin: 0; padding: 15px; background-color: #f5f7f8; color: #333; font-size: 16px; }
-        
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 15px; background-color: #f5f7f8; color: #333; font-size: 16px; }
         h1 { color: #222; font-size: 22px; border-bottom: 3px solid #06C755; padding-bottom: 8px; margin-top: 5px; }
-        h3 { font-size: 18px; margin-top: 0; margin-bottom: 15px; color: #444; }
-        
-        /* カード全体のデザインをスッキリ見やすく */
+        h3 { font-size: 17px; margin-top: 0; margin-bottom: 12px; color: #444; }
         .container { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 15px; box-sizing: border-box; }
-        
         #loading { text-align: center; margin-top: 80px; font-weight: bold; font-size: 18px; color: #666; }
         #admin-view, #user-view { display: none; }
-        
-        /* バッジを太文字にして目立たせる */
         .role-badge { display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 13px; font-weight: bold; color: white; margin-bottom: 12px; }
         .role-admin { background-color: #e53935; }
         .role-user { background-color: #06C755; }
         
-        /* 入力フォームのタップ領域を拡大 */
         .form-group { margin-bottom: 18px; text-align: left; }
         .form-group label { display: block; font-size: 14px; color: #555; margin-bottom: 6px; font-weight: bold; }
-        .form-group input { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; -webkit-appearance: none; }
-        .form-group input:focus { border-color: #06C755; outline: none; box-shadow: 0 0 5px rgba(6,199,85,0.2); }
+        .form-group input { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
         
-        /* ボタンを大きく、押しやすく（親指サイズ） */
-        button { background-color: #06C755; color: white; border: none; padding: 14px 20px; border-radius: 8px; cursor: pointer; font-size: 16px; width: 100%; margin-top: 10px; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        button { background-color: #06C755; color: white; border: none; padding: 14px 20px; border-radius: 8px; cursor: pointer; font-size: 16px; width: 100%; margin-top: 10px; font-weight: bold; }
         button:active { opacity: 0.8; transform: scale(0.98); }
         .btn-sub { background-color: #607d8b; margin-top: 20px; font-size: 15px; padding: 12px; }
         
-        /* 未払リスト・履歴のスマホ最適化 */
-        .unpaid-list, .history-list { list-style: none; padding: 0; margin: 0; }
-        .unpaid-item, .history-item { display: flex; justify-content: space-between; align-items: center; padding: 14px 10px; border-bottom: 1px solid #edf0f2; background: #fff; }
-        .unpaid-item:last-child, .history-item:last-child { border-bottom: none; }
-        .unpaid-info, .history-info { font-size: 15px; color: #333; line-height: 1.5; text-align: left; }
+        .history-list { list-style: none; padding: 0; margin: 0; }
+        .history-item { display: flex; justify-content: space-between; align-items: center; padding: 14px 10px; border-bottom: 1px solid #edf0f2; }
+        .history-info { font-size: 15px; text-align: left; }
         
-        /* 回収・欠席ボタンを押し間違えないサイズ感に */
-        .btn-actions { display: flex; gap: 8px; }
-        .btn-collect { width: auto; margin-top: 0; padding: 8px 16px; font-size: 14px; background-color: #ff9800; border-radius: 6px; }
-        .btn-absence { width: auto; margin-top: 0; padding: 8px 16px; font-size: 14px; background-color: #2196F3; border-radius: 6px; }
+        /* メンバー専用カードのデザイン */
+        .member-card { border: 1px solid #e0e4e7; border-radius: 10px; margin-bottom: 12px; padding: 15px; background: #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.02); }
+        .card-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f0f2f4; padding-bottom: 8px; margin-bottom: 10px; }
+        .detail-row { display: flex; justify-content: space-between; align-items: center; font-size: 14px; color: #555; margin-bottom: 6px; padding: 2px 0; }
+        .btn-collect { background-color: #ff9800; padding: 10px; font-size: 15px; margin-top: 12px; }
+        .btn-absence-mini { width: auto; margin-top: 0; padding: 4px 10px; font-size: 12px; background-color: #2196F3; border-radius: 4px; box-shadow: none; }
     </style>
 </head>
 <body>
@@ -62,7 +52,6 @@
                 <p style="padding: 20px; color: #888; text-align: center; margin: 0;">履歴はありません</p>
             </div>
         </div>
-        
         <button class="btn-sub" onclick="liff.closeWindow()">アプリを閉じる</button>
     </div>
 
@@ -71,9 +60,9 @@
         <h1>こんにちは、<span class="user-name"></span> さん</h1>
         
         <div style="margin-top: 20px;">
-            <h3 style="color: #444; margin-bottom: 10px; font-size: 16px;">💰 現在の未払・欠席保留一覧</h3>
-            <div id="unpaid-list-container" style="background: #fff; border: 1px solid #ddd; border-radius: 8px; max-height: 280px; overflow-y: auto;">
-                <p style="padding: 20px; color: #888; text-align: center; margin: 0;">未払いのメンバーはいません</p>
+            <h3 style="color: #444; margin-bottom: 5px; font-size: 16px;">💰 現在の未払・欠席保留一覧</h3>
+            <div id="unpaid-list-container" style="max-height: 380px; overflow-y: auto; padding: 2px;">
+                <p style="padding: 20px; color: #888; text-align: center; background: #fff; border-radius: 8px; border:1px solid #ddd;">未払いのメンバーはいません</p>
             </div>
         </div>
 
@@ -91,7 +80,7 @@
                 <label>会費 (円)</label>
                 <input type="number" id="event-amount" value="5000">
             </div>
-            <button onclick="submitNewEvent()">この内容で集金を開始する</button>
+            <button onclick="submitNewEvent()">この内容で集集を開始する</button>
         </div>
 
         <button class="btn-sub" onclick="switchToUserView()">メンバー画面として表示</button>
@@ -134,7 +123,6 @@
                 document.body.innerHTML = "初期化エラー: " + err;
             });
 
-        // ログイン成功時
         function onLoginSuccess(userInfo) {
             document.getElementById('loading').style.display = 'none';
             const nameElements = document.getElementsByClassName('user-name');
@@ -153,7 +141,6 @@
             }
         }
 
-        // 個人の履歴を描画
         function renderHistory(historyItems) {
             const historyContainer = document.getElementById('history-container');
             if(!historyItems || historyItems.length === 0) {
@@ -177,7 +164,7 @@
             historyContainer.innerHTML = html;
         }
 
-        // 未払リストを取得
+        // ★進化版：メンバーごとのカード型リストを描画する
         function loadUnpaidList() {
             fetch(GAS_WEB_APP_URL, {
                 method: "POST",
@@ -187,60 +174,85 @@
             .then(response => {
                 if (response.success) {
                     const listContainer = document.getElementById('unpaid-list-container');
-                    const items = response.data;
+                    const members = response.data;
                     
-                    if (items.length === 0) {
-                        listContainer.innerHTML = '<p style="padding: 20px; color: #888; text-align: center; margin: 0;">未払いのメンバーはいません 🎉</p>';
+                    if (members.length === 0) {
+                        listContainer.innerHTML = '<p style="padding: 20px; color: #888; text-align: center; margin: 0; background:#fff; border:1px solid #ddd; border-radius:8px;">未払いのメンバーはいません 🎉</p>';
                         return;
                     }
                     
-                    let html = '<ul class="unpaid-list">';
-                    items.forEach(item => {
+                    let html = '';
+                    members.forEach(m => {
+                        // このメンバーが抱えるすべての未払IDを配列化して、ボタンに持たせる
+                        const pIdsJson = JSON.stringify(m.payments.map(p => p.paymentId));
+                        
                         html += `
-                            <li class="unpaid-item">
-                                <div class="unpaid-info">
-                                    <strong>${item.memberName} さん</strong><br>
-                                    <span style="font-size:12px; color:#666;">${item.eventName} (${Number(item.amount).toLocaleString()}円)</span>
+                            <div class="member-card">
+                                <div class="card-header">
+                                    <strong style="font-size: 17px; color:#111;">${m.memberName} さん</strong>
+                                    <span style="font-size: 19px; font-weight: bold; color: #e53935;">${m.totalAmount.toLocaleString()} 円</span>
                                 </div>
-                                <div class="btn-actions">
-                                    <button class="btn-collect" onclick="collectPayment('${item.paymentId}', '${item.memberName}', ${item.amount})">回収</button>
-                                    <button class="btn-absence" onclick="collectAbsence('${item.paymentId}', '${item.memberName}')">欠席</button>
+                                <div style="margin-bottom: 10px;">
+                        `;
+                        
+                        // 内訳のループ
+                        m.payments.forEach(p => {
+                            html += `
+                                <div class="detail-row">
+                                    <span>・${p.eventName}</span>
+                                    <div>
+                                        <span style="font-weight:bold; margin-right:8px;">${p.amount.toLocaleString()}円</span>
+                                        ${p.amount === 5000 ? `<button class="btn-absence-mini" onclick="collectAbsence('${p.paymentId}', '${m.memberName}', '${p.eventName}')">欠席</button>` : `<span style="color: #2196F3; font-size: 12px; font-weight: bold;">積立居残</span>`}
+                                    </div>
                                 </div>
-                            </li>
+                            `;
+                        });
+                        
+                        html += `
+                                </div>
+                                <button class="btn-collect" onclick='collectPaymentBulk(${pIdsJson}, "${m.memberName}", ${m.totalAmount})'>💸 総額を一括回収する</button>
+                            </div>
                         `;
                     });
-                    html += '</ul>';
+                    
                     listContainer.innerHTML = html;
                 }
             });
         }
 
-        // 「回収」ボタン処理
-        function collectPayment(paymentId, name, amount) {
-            if (confirm(`${name} さんから ${amount} 円を回収しましたか？\nスプレッドシートを「済」に更新します。`)) {
+        // ★進化版：一括回収ボタンの処理
+        function collectPaymentBulk(paymentIds, name, totalAmount) {
+            if (confirm(`${name} さんから総額 ${totalAmount.toLocaleString()} 円を一括回収しましたか？\n内訳のデータをすべて「済」に更新します。`)) {
                 document.getElementById('loading').style.display = 'block';
-                document.getElementById('loading').innerText = "スプレッドシートを更新中...";
+                document.getElementById('loading').innerText = "一括回収を記録中...";
                 
                 fetch(GAS_WEB_APP_URL, {
                     method: "POST",
-                    body: JSON.stringify({ action: 'recordPayment', paymentId: paymentId })
+                    body: JSON.stringify({
+                        action: 'recordPayment',
+                        paymentIds: paymentIds // 配列で送る
+                    })
                 })
                 .then(res => res.json())
                 .then(response => {
                     document.getElementById('loading').style.display = 'none';
                     if (response.success) {
-                        alert("回収を記録しました！");
+                        alert("一括回収を記録しました！");
                         location.reload();
                     } else {
                         alert("エラー: " + response.error);
                     }
+                })
+                .catch(err => {
+                    document.getElementById('loading').style.display = 'none';
+                    alert("通信エラー: " + err);
                 });
             }
         }
 
-        // 「欠席」ボタン処理
-        function collectAbsence(paymentId, name) {
-            if (confirm(`${name} さんは今回「欠席」ですか？\n請求金額を積立分（2,000円）に変更し、未払いのまま次回に繰り越します。`)) {
+        // 「欠席」ボタン処理（特定のイベント単体に対して作用する）
+        function collectAbsence(paymentId, name, eventName) {
+            if (confirm(`${name} さんの「${eventName}」を欠席にしますか？\nこのイベントの請求を2,000円（積立のみ）に減額し、未払いで残します。`)) {
                 document.getElementById('loading').style.display = 'block';
                 document.getElementById('loading').innerText = "欠席データを処理中...";
                 
@@ -261,7 +273,7 @@
             }
         }
 
-        // イベント登録
+        // 新規イベント登録
         function submitNewEvent() {
             const name = document.getElementById('event-name').value;
             const date = document.getElementById('event-date').value;
