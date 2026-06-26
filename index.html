@@ -2,35 +2,48 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>5日会集集金アプリ</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>5日会集金アプリ</title>
     <script src="https://static.line-scdn.net/liff/edge/versions/2.22.3/sdk.js"></script>
     <style>
-        body { font-family: sans-serif; margin: 0; padding: 20px; background-color: #f4f4f4; }
-        h1 { color: #333; font-size: 20px; border-bottom: 2px solid #06C755; padding-bottom: 10px; }
-        .container { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        #loading { text-align: center; margin-top: 50px; font-weight: bold; }
+        /* 全体の文字サイズと余白をスマホ用に拡大 */
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; margin: 0; padding: 15px; background-color: #f5f7f8; color: #333; font-size: 16px; }
+        
+        h1 { color: #222; font-size: 22px; border-bottom: 3px solid #06C755; padding-bottom: 8px; margin-top: 5px; }
+        h3 { font-size: 18px; margin-top: 0; margin-bottom: 15px; color: #444; }
+        
+        /* カード全体のデザインをスッキリ見やすく */
+        .container { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 15px; box-sizing: border-box; }
+        
+        #loading { text-align: center; margin-top: 80px; font-weight: bold; font-size: 18px; color: #666; }
         #admin-view, #user-view { display: none; }
-        .role-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; color: white; margin-bottom: 10px; }
-        .role-admin { background-color: #f44336; }
+        
+        /* バッジを太文字にして目立たせる */
+        .role-badge { display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 13px; font-weight: bold; color: white; margin-bottom: 12px; }
+        .role-admin { background-color: #e53935; }
         .role-user { background-color: #06C755; }
         
-        .form-group { margin-bottom: 15px; text-align: left; }
-        .form-group label { display: block; font-size: 14px; color: #666; margin-bottom: 5px; font-weight: bold; }
-        .form-group input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-size: 16px; }
+        /* 入力フォームのタップ領域を拡大 */
+        .form-group { margin-bottom: 18px; text-align: left; }
+        .form-group label { display: block; font-size: 14px; color: #555; margin-bottom: 6px; font-weight: bold; }
+        .form-group input { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; -webkit-appearance: none; }
+        .form-group input:focus { border-color: #06C755; outline: none; box-shadow: 0 0 5px rgba(6,199,85,0.2); }
         
-        button { background-color: #06C755; color: white; border: none; padding: 12px 20px; border-radius: 5px; cursor: pointer; font-size: 16px; width: 100%; margin-top: 10px; font-weight: bold; }
-        button:active { opacity: 0.8; }
-        .btn-sub { background-color: #777; margin-top: 20px; font-size: 14px; padding: 8px; }
+        /* ボタンを大きく、押しやすく（親指サイズ） */
+        button { background-color: #06C755; color: white; border: none; padding: 14px 20px; border-radius: 8px; cursor: pointer; font-size: 16px; width: 100%; margin-top: 10px; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        button:active { opacity: 0.8; transform: scale(0.98); }
+        .btn-sub { background-color: #607d8b; margin-top: 20px; font-size: 15px; padding: 12px; }
         
-        /* リスト・履歴用の共通スタイル */
+        /* 未払リスト・履歴のスマホ最適化 */
         .unpaid-list, .history-list { list-style: none; padding: 0; margin: 0; }
-        .unpaid-item, .history-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #eee; background: #fff; }
-        .unpaid-info, .history-info { font-size: 14px; color: #333; line-height: 1.4; }
+        .unpaid-item, .history-item { display: flex; justify-content: space-between; align-items: center; padding: 14px 10px; border-bottom: 1px solid #edf0f2; background: #fff; }
+        .unpaid-item:last-child, .history-item:last-child { border-bottom: none; }
+        .unpaid-info, .history-info { font-size: 15px; color: #333; line-height: 1.5; text-align: left; }
         
-        /* ボタン色分け */
-        .btn-actions { display: flex; gap: 5px; }
-        .btn-collect { width: auto; margin-top: 0; padding: 6px 12px; font-size: 13px; background-color: #ff9800; }
-        .btn-absence { width: auto; margin-top: 0; padding: 6px 12px; font-size: 13px; background-color: #2196F3; }
+        /* 回収・欠席ボタンを押し間違えないサイズ感に */
+        .btn-actions { display: flex; gap: 8px; }
+        .btn-collect { width: auto; margin-top: 0; padding: 8px 16px; font-size: 14px; background-color: #ff9800; border-radius: 6px; }
+        .btn-absence { width: auto; margin-top: 0; padding: 8px 16px; font-size: 14px; background-color: #2196F3; border-radius: 6px; }
     </style>
 </head>
 <body>
@@ -40,13 +53,13 @@
     <div id="user-view" class="container">
         <div class="role-badge role-user">メンバー</div>
         <h1>こんにちは、<span class="user-name"></span> さん</h1>
-        <p>あなたの現在の未払合計額は...</p>
-        <div id="unpaid-amount" style="font-size: 36px; font-weight: bold; color: #f44336; text-align: center; margin: 20px 0;">0 円</div>
+        <p style="color:#666; margin-bottom:5px;">あなたの現在の未払合計額は...</p>
+        <div id="unpaid-amount" style="font-size: 42px; font-weight: bold; color: #e53935; text-align: center; margin: 15px 0; background: #fff5f5; padding: 15px; border-radius: 8px; border: 1px solid #ffe3e3;">0 円</div>
         
-        <div style="margin-top: 30px;">
-            <h3 style="color: #333; margin-bottom: 10px; font-size: 16px;">📊 あなたの支払い履歴（済）</h3>
-            <div id="history-container" style="background: #fff; border: 1px solid #ccc; border-radius: 8px; max-height: 200px; overflow-y: auto;">
-                <p style="padding: 15px; color: #888; text-align: center; margin: 0;">履歴はありません</p>
+        <div style="margin-top: 25px;">
+            <h3 style="color: #444; margin-bottom: 10px; font-size: 16px;">📊 あなたの支払い履歴（済）</h3>
+            <div id="history-container" style="background: #fff; border: 1px solid #ddd; border-radius: 8px; max-height: 220px; overflow-y: auto;">
+                <p style="padding: 20px; color: #888; text-align: center; margin: 0;">履歴はありません</p>
             </div>
         </div>
         
@@ -58,14 +71,14 @@
         <h1>こんにちは、<span class="user-name"></span> さん</h1>
         
         <div style="margin-top: 20px;">
-            <h3 style="color: #333; margin-bottom: 10px; font-size: 16px;">💰 現在の未払・欠席保留一覧</h3>
-            <div id="unpaid-list-container" style="background: #fff; border: 1px solid #ccc; border-radius: 8px; max-height: 250px; overflow-y: auto;">
-                <p style="padding: 15px; color: #888; text-align: center; margin: 0;">未払いのメンバーはいません</p>
+            <h3 style="color: #444; margin-bottom: 10px; font-size: 16px;">💰 現在の未払・欠席保留一覧</h3>
+            <div id="unpaid-list-container" style="background: #fff; border: 1px solid #ddd; border-radius: 8px; max-height: 280px; overflow-y: auto;">
+                <p style="padding: 20px; color: #888; text-align: center; margin: 0;">未払いのメンバーはいません</p>
             </div>
         </div>
 
-        <div style="background: #fdfdfd; padding: 15px; border: 1px dashed #ccc; border-radius: 8px; margin-top: 20px;">
-            <h3 style="margin-top: 0; color: #333; font-size: 16px;">🍻 新しい飲み会の登録</h3>
+        <div style="background: #fcfdfe; padding: 18px; border: 1px dashed #bbb; border-radius: 10px; margin-top: 25px;">
+            <h3 style="margin-top: 0; color: #333; font-size: 17px;">🍻 新しい飲み会の登録</h3>
             <div class="form-group">
                 <label>イベント名</label>
                 <input type="text" id="event-name" placeholder="例：6月度 飲み会">
@@ -76,7 +89,8 @@
             </div>
             <div class="form-group">
                 <label>会費 (円)</label>
-                <input type="number" id="event-amount" value="5000"> </div>
+                <input type="number" id="event-amount" value="5000">
+            </div>
             <button onclick="submitNewEvent()">この内容で集金を開始する</button>
         </div>
 
@@ -128,10 +142,7 @@
                 nameElements[i].innerText = userInfo.name;
             }
 
-            // 金額表示
             document.getElementById('unpaid-amount').innerText = Number(userInfo.totalAmount).toLocaleString() + " 円";
-
-            // ★新機能：本人の支払い履歴を生成して表示
             renderHistory(userInfo.history);
 
             if (userInfo.role === 'admin') {
@@ -142,11 +153,11 @@
             }
         }
 
-        // ★新機能：個人の履歴を画面に描画する
+        // 個人の履歴を描画
         function renderHistory(historyItems) {
             const historyContainer = document.getElementById('history-container');
             if(!historyItems || historyItems.length === 0) {
-                historyContainer.innerHTML = '<p style="padding: 15px; color: #888; text-align: center; margin: 0;">履歴はありません</p>';
+                historyContainer.innerHTML = '<p style="padding: 20px; color: #888; text-align: center; margin: 0;">履歴はありません</p>';
                 return;
             }
             let html = '<ul class="history-list">';
@@ -158,7 +169,7 @@
                             <strong>${item.eventName}</strong><br>
                             <span style="font-size:12px; color:#666;">${dateStr}</span>
                         </div>
-                        <div style="font-weight:bold; color:#06C755;">${Number(item.amount).toLocaleString()} 円</div>
+                        <div style="font-weight:bold; color:#06C755; font-size:17px;">${Number(item.amount).toLocaleString()} 円</div>
                     </li>
                 `;
             });
@@ -166,7 +177,7 @@
             historyContainer.innerHTML = html;
         }
 
-        // 未払リストを取得（「回収」と「欠席」の2つのボタンを配置）
+        // 未払リストを取得
         function loadUnpaidList() {
             fetch(GAS_WEB_APP_URL, {
                 method: "POST",
@@ -179,7 +190,7 @@
                     const items = response.data;
                     
                     if (items.length === 0) {
-                        listContainer.innerHTML = '<p style="padding: 15px; color: #888; text-align: center; margin: 0;">未払いのメンバーはいません 🎉</p>';
+                        listContainer.innerHTML = '<p style="padding: 20px; color: #888; text-align: center; margin: 0;">未払いのメンバーはいません 🎉</p>';
                         return;
                     }
                     
@@ -219,7 +230,7 @@
                     document.getElementById('loading').style.display = 'none';
                     if (response.success) {
                         alert("回収を記録しました！");
-                        location.reload(); // 金額と履歴も全部一発で最新にするため、画面をリロード
+                        location.reload();
                     } else {
                         alert("エラー: " + response.error);
                     }
@@ -227,7 +238,7 @@
             }
         }
 
-        // ★新機能：「欠席」ボタン処理
+        // 「欠席」ボタン処理
         function collectAbsence(paymentId, name) {
             if (confirm(`${name} さんは今回「欠席」ですか？\n請求金額を積立分（2,000円）に変更し、未払いのまま次回に繰り越します。`)) {
                 document.getElementById('loading').style.display = 'block';
@@ -242,7 +253,7 @@
                     document.getElementById('loading').style.display = 'none';
                     if (response.success) {
                         alert("欠席（積立金保留）を記録しました！");
-                        location.reload(); // 画面をリロードしてリストを最新に
+                        location.reload();
                     } else {
                         alert("エラー: " + response.error);
                     }
