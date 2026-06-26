@@ -14,7 +14,6 @@
         .role-admin { background-color: #f44336; }
         .role-user { background-color: #06C755; }
         
-        /* フォーム用のスタイル */
         .form-group { margin-bottom: 15px; text-align: left; }
         .form-group label { display: block; font-size: 14px; color: #666; margin-bottom: 5px; font-weight: bold; }
         .form-group input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-size: 16px; }
@@ -32,7 +31,7 @@
         <div class="role-badge role-user">メンバー</div>
         <h1>こんにちは、<span class="user-name"></span> さん</h1>
         <p>あなたの次回の支払額は...</p>
-        <div style="font-size: 32px; font-weight: bold; color: #333; text-align: center; margin: 20px 0;">まだ計算できません</div>
+        <div id="unpaid-amount" style="font-size: 36px; font-weight: bold; color: #f44336; text-align: center; margin: 20px 0;">0 円</div>
         <button onclick="liff.closeWindow()">閉じる</button>
     </div>
 
@@ -67,14 +66,12 @@
         // ⚠️【超重要】あなたのGASの「ウェブアプリURL」をここに貼り付け直してください
         const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxFs7FRgENnnx8YlFVjFrX57hpGlOYO4L1acSHX0upyrKRT_Nr7EYO-8UJB1pzcuzwH/exec"; 
 
-        // LIFFアプリ起動
         liff.init({ liffId: MY_LIFF_ID })
             .then(() => {
                 if (!liff.isLoggedIn()) {
                     liff.login();
                 } else {
                     liff.getProfile().then(profile => {
-                        // GAS側に「アクション：ログイン」としてデータを送る
                         fetch(GAS_WEB_APP_URL, {
                             method: "POST",
                             body: JSON.stringify({
@@ -101,13 +98,16 @@
                 document.body.innerHTML = "初期化エラー: " + err;
             });
 
-        // ログイン成功時の画面切り替え
+        // ログイン成功時
         function onLoginSuccess(userInfo) {
             document.getElementById('loading').style.display = 'none';
             const nameElements = document.getElementsByClassName('user-name');
             for(let i=0; i<nameElements.length; i++) {
                 nameElements[i].innerText = userInfo.name;
             }
+
+            // ★新機能：送られてきた未払金額を画面に綺麗に表示（3桁カンマ区切り）
+            document.getElementById('unpaid-amount').innerText = Number(userInfo.totalAmount).toLocaleString() + " 円";
 
             if (userInfo.role === 'admin') {
                 document.getElementById('admin-view').style.display = 'block';
@@ -116,7 +116,6 @@
             }
         }
 
-        // ★新機能：イベント登録ボタンが押されたときの処理
         function submitNewEvent() {
             const name = document.getElementById('event-name').value;
             const date = document.getElementById('event-date').value;
@@ -132,7 +131,6 @@
                 document.getElementById('loading').innerText = "スプレッドシートに書き込み中...";
                 document.getElementById('admin-view').style.display = 'none';
 
-                // GAS側に「アクション：イベント作成」としてデータを飛ばす！
                 fetch(GAS_WEB_APP_URL, {
                     method: "POST",
                     body: JSON.stringify({
@@ -148,8 +146,7 @@
                     document.getElementById('admin-view').style.display = 'block';
                     
                     if(response.success) {
-                        alert(`登録完了！\nイベントID: ${response.data.eventId}\n在籍メンバー ${response.data.memberCount} 名分の未払データを作成しました！`);
-                        // 入力欄を空っぽにする
+                        alert(`登録完了！\nメンバーの未払データを作成しました！\n一度アプリを閉じて開き直すと、金額が反映されます。`);
                         document.getElementById('event-name').value = "";
                         document.getElementById('event-date').value = "";
                         document.getElementById('event-amount').value = "";
