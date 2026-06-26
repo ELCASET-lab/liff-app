@@ -21,6 +21,12 @@
         button { background-color: #06C755; color: white; border: none; padding: 12px 20px; border-radius: 5px; cursor: pointer; font-size: 16px; width: 100%; margin-top: 10px; font-weight: bold; }
         button:active { opacity: 0.8; }
         .btn-sub { background-color: #777; margin-top: 20px; font-size: 14px; padding: 8px; }
+        
+        /* リスト用のスタイル */
+        .unpaid-list { list-style: none; padding: 0; margin: 0; }
+        .unpaid-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #eee; background: #fff; }
+        .unpaid-info { font-size: 14px; color: #333; line-height: 1.4; }
+        .btn-collect { width: auto; margin-top: 0; padding: 6px 15px; font-size: 14px; background-color: #ff9800; }
     </style>
 </head>
 <body>
@@ -39,9 +45,15 @@
         <div class="role-badge role-admin">会計 (管理者)</div>
         <h1>こんにちは、<span class="user-name"></span> さん</h1>
         
-        <div style="background: #fdfdfd; padding: 15px; border: 1px dashed #ccc; border-radius: 8px; margin-top: 15px;">
+        <div style="margin-top: 20px;">
+            <h3 style="color: #333; margin-bottom: 10px;">💰 現在の未払メンバー一覧</h3>
+            <div id="unpaid-list-container" style="background: #fff; border: 1px solid #ccc; border-radius: 8px; max-height: 250px; overflow-y: auto;">
+                <p style="padding: 15px; color: #888; text-align: center; margin: 0;">未払いのメンバーはいません</p>
+            </div>
+        </div>
+
+        <div style="background: #fdfdfd; padding: 15px; border: 1px dashed #ccc; border-radius: 8px; margin-top: 20px;">
             <h3 style="margin-top: 0; color: #333;">🍻 新しい飲み会の登録</h3>
-            
             <div class="form-group">
                 <label>イベント名</label>
                 <input type="text" id="event-name" placeholder="例：6月度 飲み会">
@@ -54,7 +66,6 @@
                 <label>会費 (円)</label>
                 <input type="number" id="event-amount" placeholder="例：4000">
             </div>
-            
             <button onclick="submitNewEvent()">この内容で集金を開始する</button>
         </div>
 
@@ -106,16 +117,85 @@
                 nameElements[i].innerText = userInfo.name;
             }
 
-            // ★新機能：送られてきた未払金額を画面に綺麗に表示（3桁カンマ区切り）
             document.getElementById('unpaid-amount').innerText = Number(userInfo.totalAmount).toLocaleString() + " 円";
 
             if (userInfo.role === 'admin') {
                 document.getElementById('admin-view').style.display = 'block';
+                // 管理者の場合は未払リストを読み込む
+                loadUnpaidList();
             } else {
                 document.getElementById('user-view').style.display = 'block';
             }
         }
 
+        // ★新機能：未払リストをGASから取得して画面に表示する
+        function loadUnpaidList() {
+            fetch(GAS_WEB_APP_URL, {
+                method: "POST",
+                body: JSON.stringify({ action: 'getUnpaidList' })
+            })
+            .then(res => res.json())
+            .then(response => {
+                if (response.success) {
+                    const listContainer = document.getElementById('unpaid-list-container');
+                    const items = response.data;
+                    
+                    if (items.length === 0) {
+                        listContainer.innerHTML = '<p style="padding: 15px; color: #888; text-align: center; margin: 0;">未払いのメンバーはいません 🎉</p>';
+                        return;
+                    }
+                    
+                    let html = '<ul class="unpaid-list">';
+                    items.forEach(item => {
+                        html += `
+                            <li class="unpaid-item">
+                                <div class="unpaid-info">
+                                    <strong>${item.memberName} さん</strong><br>
+                                    <span style="font-size:12px; color:#666;">${item.eventName} (${Number(item.amount).toLocaleString()}円)</span>
+                                </div>
+                                <button class="btn-collect" onclick="collectPayment('${item.paymentId}', '${item.memberName}', ${item.amount})">回収</button>
+                            </li>
+                        `;
+                    });
+                    html += '</ul>';
+                    listContainer.innerHTML = html;
+                }
+            });
+        }
+
+        // ★新機能：「回収」ボタンが押されたときの処理
+        function collectPayment(paymentId, name, amount) {
+            if (confirm(`${name} さんから ${amount} 円を回収しましたか？\nスプレッドシートを「済」に更新します。`)) {
+                document.getElementById('loading').style.display = 'block';
+                document.getElementById('loading').innerText = "スプレッドシートを更新中...";
+                
+                fetch(GAS_WEB_APP_URL, {
+                    method: "POST",
+                    body: JSON.stringify({
+                        action: 'recordPayment',
+                        paymentId: paymentId
+                    })
+                })
+                .then(res => res.json())
+                .then(response => {
+                    document.getElementById('loading').style.display = 'none';
+                    if (response.success) {
+                        alert("回収を記録しました！");
+                        // 画面のリストを最新にリロード
+                        loadUnpaidList();
+                        // 自分の未払表示も更新するため、一瞬loadingを挟んで再表示させる処理を模倣（簡易的にテキスト変更でも可ですが、リロードが確実）
+                    } else {
+                        alert("エラー: " + response.error);
+                    }
+                })
+                .catch(err => {
+                    document.getElementById('loading').style.display = 'none';
+                    alert("通信エラー: " + err);
+                });
+            }
+        }
+
+        // イベント登録
         function submitNewEvent() {
             const name = document.getElementById('event-name').value;
             const date = document.getElementById('event-date').value;
@@ -146,10 +226,11 @@
                     document.getElementById('admin-view').style.display = 'block';
                     
                     if(response.success) {
-                        alert(`登録完了！\nメンバーの未払データを作成しました！\n一度アプリを閉じて開き直すと、金額が反映されます。`);
+                        alert(`登録完了！\n未払データを作成しました！`);
                         document.getElementById('event-name').value = "";
                         document.getElementById('event-date').value = "";
                         document.getElementById('event-amount').value = "";
+                        loadUnpaidList(); // リストを更新
                     } else {
                         alert("登録エラー: " + response.error);
                     }
