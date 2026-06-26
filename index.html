@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>5日会集金アプリ</title>
+    <script src="https://static.line-scdn.net/liff/edge/versions/2.22.3/sdk.js"></script>
+    <style>
+        body { font-family: sans-serif; margin: 0; padding: 20px; background-color: #f4f4f4; }
+        h1 { color: #333; font-size: 20px; border-bottom: 2px solid #06C755; padding-bottom: 10px; }
+        .container { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        #loading { text-align: center; margin-top: 50px; }
+        #admin-view, #user-view { display: none; }
+        .role-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; color: white; margin-bottom: 10px; }
+        .role-admin { background-color: #f44336; }
+        .role-user { background-color: #06C755; }
+        button { background-color: #06C755; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-size: 16px; width: 100%; margin-top: 10px; }
+        button:active { opacity: 0.8; }
+    </style>
+</head>
+<body>
+
+    <div id="loading">読み込み中...</div>
+
+    <div id="user-view" class="container">
+        <div class="role-badge role-user">メンバー</div>
+        <h1>こんにちは、<span class="user-name"></span> さん</h1>
+        <p>あなたの次回の支払額は...</p>
+        <div style="font-size: 32px; font-weight: bold; color: #333; text-align: center; margin: 20px 0;">まだ計算できません</div>
+        <button onclick="liff.closeWindow()">閉じる</button>
+    </div>
+
+    <div id="admin-view" class="container">
+        <div class="role-badge role-admin">会計 (管理者)</div>
+        <h1>こんにちは、<span class="user-name"></span> さん</h1>
+        <p>【管理者メニュー】</p>
+        <button onclick="alert('まだ作っていません')">集金状況を確認する</button>
+        <button onclick="alert('まだ作っていません')">新しい飲み会を登録する</button>
+        <button style="background-color: #777; margin-top: 30px;" onclick="switchToUserView()">メンバー画面として表示</button>
+    </div>
+
+    <script>
+        const MY_LIFF_ID = "2010432252-75FYrhvD"; 
+        // 【重要】あなたのGASの「ウェブアプリURL」をここに貼り付けます
+        const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxFs7FRgENnnx8YlFVjFrX57hpGlOYO4L1acSHX0upyrKRT_Nr7EYO-8UJB1pzcuzwH/exec"; 
+
+        // アプリ起動
+        liff.init({ liffId: MY_LIFF_ID })
+            .then(() => {
+                if (!liff.isLoggedIn()) {
+                    liff.login();
+                } else {
+                    liff.getProfile().then(profile => {
+                        // Googleの箱をすり抜け、普通のネット通信（fetch）でGASにデータを送る！
+                        fetch(GAS_WEB_APP_URL, {
+                            method: "POST",
+                            body: JSON.stringify({
+                                userId: profile.userId,
+                                displayName: profile.displayName
+                            })
+                        })
+                        .then(res => res.json())
+                        .then(response => {
+                            if(response.success) {
+                                onLoginSuccess(response.data);
+                            } else {
+                                document.body.innerHTML = "GAS処理エラー: " + response.error;
+                            }
+                        })
+                        .catch(err => {
+                            document.body.innerHTML = "通信エラー: " + err;
+                        });
+                    });
+                }
+            })
+            .catch((err) => {
+                document.body.innerHTML = "初期化エラー: " + err;
+            });
+
+        function onLoginSuccess(userInfo) {
+            document.getElementById('loading').style.display = 'none';
+            const nameElements = document.getElementsByClassName('user-name');
+            for(let i=0; i<nameElements.length; i++) {
+                nameElements[i].innerText = userInfo.name;
+            }
+
+            if (userInfo.role === 'admin') {
+                document.getElementById('admin-view').style.display = 'block';
+            } else {
+                document.getElementById('user-view').style.display = 'block';
+            }
+        }
+        
+        function switchToUserView() {
+            document.getElementById('admin-view').style.display = 'none';
+            document.getElementById('user-view').style.display = 'block';
+        }
+    </script>
+</body>
+</html>
