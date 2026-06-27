@@ -27,16 +27,25 @@
         .history-list { list-style: none; padding: 0; margin: 0; }
         .history-item { display: flex; justify-content: space-between; align-items: center; padding: 14px 10px; border-bottom: 1px solid #edf0f2; }
         
-        .member-card { border: 1px solid #e0e4e7; border-radius: 10px; margin-bottom: 12px; padding: 15px; background: #fff; }
-        .card-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f0f2f4; padding-bottom: 8px; margin-bottom: 10px; }
-        .detail-row { display: flex; justify-content: space-between; align-items: center; font-size: 14px; color: #555; margin-bottom: 6px; }
-        .btn-collect { background-color: #ff9800; padding: 10px; font-size: 15px; margin-top: 12px; }
-        .btn-absence-mini { width: auto; margin-top: 0; padding: 4px 10px; font-size: 12px; background-color: #2196F3; border-radius: 4px; box-shadow: none; }
+        .member-card { border: 1px solid #e0e4e7; border-radius: 10px; margin-bottom: 12px; padding: 15px; background: #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.02); }
+        .card-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f0f2f4; padding-bottom: 8px; margin-bottom: 12px; }
         
+        /* 明細行と個別アクションボタンの配置 */
+        .detail-row { display: flex; justify-content: space-between; align-items: center; font-size: 14px; color: #444; margin-bottom: 10px; padding: 4px 0; border-bottom: 1px dotted #f0f0f0; }
+        .detail-row:last-child { border-bottom: none; }
+        .btn-actions-mini { display: flex; gap: 5px; align-items: center; }
+        
+        /* ミニボタンの装飾 */
+        .btn-mini { width: auto; margin-top: 0; padding: 5px 10px; font-size: 12px; border-radius: 5px; font-weight: bold; box-shadow: none; }
+        .btn-individual-collect { background-color: #ff9800; color: white; }
+        .btn-absence-mini { background-color: #2196F3; color: white; }
+        .label-stay { color: #2196F3; font-size: 12px; font-weight: bold; background: #e3f2fd; padding: 3px 8px; border-radius: 4px; }
+        
+        .btn-collect { background-color: #ff5722; padding: 12px; font-size: 16px; margin-top: 10px; }
         .panel-box { background: #fcfdfe; padding: 18px; border: 1px dashed #bbb; border-radius: 10px; margin-top: 25px; }
         .grid-2 { display: flex; gap: 10px; }
         .grid-2 .form-group { flex: 1; }
-        .btn-csv { background-color: #2196F3; font-size: 14px; padding: 10px; margin-top: 5px; }
+        .btn-csv { background-color: #009688; font-size: 14px; padding: 10px; margin-top: 5px; }
         .btn-email { background-color: #673ab7; font-size: 14px; padding: 10px; margin-top: 5px; }
     </style>
 </head>
@@ -65,7 +74,7 @@
         
         <div style="margin-top: 20px;">
             <h3 style="color: #444; margin-bottom: 5px; font-size: 16px;">💰 現在の未払・欠席保留一覧</h3>
-            <div id="unpaid-list-container" style="max-height: 300px; overflow-y: auto; padding: 2px;">
+            <div id="unpaid-list-container" style="max-height: 320px; overflow-y: auto; padding: 2px;">
                 <p style="padding: 20px; color: #888; text-align: center; background: #fff; border-radius: 8px; border:1px solid #ddd;">未払いのメンバーはいません</p>
             </div>
         </div>
@@ -88,22 +97,27 @@
             </div>
             <button class="btn-email" onclick="sendEmailSummary()">📧 指定アドレスにCSVをメール送信</button>
             <button class="btn-csv" onclick="downloadCSVSummary()">💾 スマホにCSVをダウンロード</button>
-            <p style="font-size: 11px; color:#777; margin-top:5px; text-align:left; line-height:1.3;">※LINEアプリ内では直接ダウンロードが動かない場合があります。その場合は「メール送信」をご利用ください。</p>
         </div>
 
         <div class="panel-box" style="border-style: dashed;">
             <h3>🍻 新しい飲み会の登録</h3>
             <div class="form-group">
                 <label>イベント名</label>
-                <input type="text" id="event-name" placeholder="例：6月度 飲み会">
+                <input type="text" id="event-name" placeholder="例：7月度 定例会">
             </div>
             <div class="form-group">
                 <label>開催日</label>
                 <input type="date" id="event-date">
             </div>
-            <div class="form-group">
-                <label>会費 (円)</label>
-                <input type="number" id="event-amount" value="5000">
+            <div class="grid-2">
+                <div class="form-group">
+                    <label>会費総額 (円)</label>
+                    <input type="number" id="event-amount" value="5000">
+                </div>
+                <div class="form-group">
+                    <label>うち積立金 (円)</label>
+                    <input type="number" id="event-save-amount" value="2000">
+                </div>
             </div>
             <button onclick="submitNewEvent()">この内容で集金を開始する</button>
         </div>
@@ -195,6 +209,7 @@
             historyContainer.innerHTML = html;
         }
 
+        // 未払リストの描画（★個別回収ボタン ＆ 欠席判定対応）
         function loadUnpaidList() {
             fetch(GAS_WEB_APP_URL, {
                 method: "POST",
@@ -220,19 +235,26 @@
                                     <strong style="font-size: 17px; color:#111;">${m.memberName} さん</strong>
                                     <span style="font-size: 19px; font-weight: bold; color: #e53935;">${m.totalAmount.toLocaleString()} 円</span>
                                 </div>
-                                <div style="margin-bottom: 10px;">
+                                <div style="margin-bottom: 5px;">
                         `;
+                        
+                        // 内訳のループ
                         m.payments.forEach(p => {
                             html += `
                                 <div class="detail-row">
-                                    <span>・${p.eventName}</span>
-                                    <div>
-                                        <span style="font-weight:bold; margin-right:8px;">${p.amount.toLocaleString()}円</span>
-                                        ${p.amount === 5000 ? `<button class="btn-absence-mini" onclick="collectAbsence('${p.paymentId}', '${m.memberName}', '${p.eventName}')">欠席</button>` : `<span style="color: #2196F3; font-size: 12px; font-weight: bold;">積立居残</span>`}
+                                    <span style="text-align:left;">・${p.eventName} (<strong>${p.amount.toLocaleString()}円</strong>)</span>
+                                    <div class="btn-actions-mini">
+                                        <button class="btn-mini btn-individual-collect" onclick='collectPaymentBulk(["${p.paymentId}"], "${m.memberName}", ${p.amount})'>回収</button>
+                                        
+                                        ${p.isAbsenceProcessed ? 
+                                            `<span class="label-stay">積立居残</span>` : 
+                                            `<button class="btn-mini btn-absence-mini" onclick="collectAbsence('${p.paymentId}', '${m.memberName}', '${p.eventName}')">欠席</button>`
+                                        }
                                     </div>
                                 </div>
                             `;
                         });
+                        
                         html += `
                                 </div>
                                 <button class="btn-collect" onclick='collectPaymentBulk(${pIdsJson}, "${m.memberName}", ${m.totalAmount})'>💸 総額を一括回収する</button>
@@ -244,7 +266,7 @@
             });
         }
 
-        // ★新機能：CSVダウンロード側の組み立ても新しい明細形式（6列）に完全同期
+        // CSVダウンロード
         function downloadCSVSummary() {
             const start = document.getElementById('summary-start').value;
             const end = document.getElementById('summary-end').value;
@@ -262,7 +284,6 @@
                 document.getElementById('loading').style.display = 'none';
                 if (response.success) {
                     const items = response.data;
-                    // 新しい明細レイアウトのヘッダー
                     let csv = "\uFEFFイベント名,開催日,メンバー名,支払済額(円),未払額(円),状態\n";
                     items.forEach(item => {
                         csv += `"${item.eventName}","${item.eventDate}","${item.memberName}",${item.paid},${item.unpaid},"${item.status}"\n`;
@@ -278,13 +299,10 @@
                 } else {
                     alert("集計エラー: " + response.error);
                 }
-            })
-            .catch(err => {
-                document.getElementById('loading').style.display = 'none';
-                alert("通信エラー: " + err);
             });
         }
 
+        // メール送信
         function sendEmailSummary() {
             const start = document.getElementById('summary-start').value;
             const end = document.getElementById('summary-end').value;
@@ -307,15 +325,17 @@
                 } else {
                     alert("送信エラー: " + response.error);
                 }
-            })
-            .catch(err => {
-                document.getElementById('loading').style.display = 'none';
-                alert("通信エラー: " + err);
             });
         }
 
-        function collectPaymentBulk(paymentIds, name, totalAmount) {
-            if (confirm(`${name} さんから総額 ${totalAmount.toLocaleString()} 円を一括回収しましたか？`)) {
+        // 回収処理（一括・個別兼用）
+        function collectPaymentBulk(paymentIds, name, amount) {
+            const isBulk = paymentIds.length > 1;
+            const msg = isBulk ? 
+                `${name} さんから総額 ${amount.toLocaleString()} 円を一括回収しましたか？\n内訳データをすべて「済」にします。` :
+                `${name} さんからこのイベントの分（${amount.toLocaleString()} 円）だけを回収しましたか？`;
+
+            if (confirm(msg)) {
                 document.getElementById('loading').style.display = 'block';
                 fetch(GAS_WEB_APP_URL, {
                     method: "POST",
@@ -323,13 +343,14 @@
                 })
                 .then(res => res.json())
                 .then(response => {
-                    if (response.success) { alert("一括回収を記録しました！"); location.reload(); }
+                    if (response.success) { alert("回収を記録しました！"); location.reload(); }
                 });
             }
         }
 
+        // 欠席処理
         function collectAbsence(paymentId, name, eventName) {
-            if (confirm(`${name} さんの「${eventName}」を欠席にしますか？`)) {
+            if (confirm(`${name} さんの「${eventName}」を欠席にしますか？\nこのイベントの請求を設定された積立金に変更し、未払いで次回へ繰り越します。`)) {
                 document.getElementById('loading').style.display = 'block';
                 fetch(GAS_WEB_APP_URL, {
                     method: "POST",
@@ -337,27 +358,36 @@
                 })
                 .then(res => res.json())
                 .then(response => {
-                    if (response.success) { alert("欠席を記録しました！"); location.reload(); }
+                    if (response.success) { alert("欠席（積立金保留）を記録しました！"); location.reload(); }
                 });
             }
         }
 
+        // 新規イベント登録
         function submitNewEvent() {
             const name = document.getElementById('event-name').value;
             const date = document.getElementById('event-date').value;
             const amount = document.getElementById('event-amount').value;
-            if (!name || !date || !amount) { alert("すべての項目を入力してください！"); return; }
+            const saveAmount = document.getElementById('event-save-amount').value; // ★積立金取得
+            
+            if (!name || !date || !amount || !saveAmount) { alert("すべての項目を入力してください！"); return; }
 
-            if (confirm(`「${name}」を登録し、メンバー全員の集金データを作成します。よろしいですか？`)) {
+            if (confirm(`「${name}」（会費:${Number(amount).toLocaleString()}円 / 積立:${Number(saveAmount).toLocaleString()}円）を登録します。よろしいですか？`)) {
                 document.getElementById('loading').style.display = 'block';
                 document.getElementById('admin-view').style.display = 'none';
                 fetch(GAS_WEB_APP_URL, {
                     method: "POST",
-                    body: JSON.stringify({ action: 'createEvent', eventName: name, eventDate: date, amount: amount })
+                    body: JSON.stringify({ 
+                        action: 'createEvent', 
+                        eventName: name, 
+                        eventDate: date, 
+                        amount: amount,
+                        saveAmount: saveAmount // ★送信
+                    })
                 })
                 .then(res => res.json())
                 .then(response => {
-                    if(response.success) { alert(`登録完了！`); document.getElementById('event-name').value = ""; document.getElementById('event-date').value = ""; location.reload(); }
+                    if(response.success) { alert(`登録完了！`); location.reload(); }
                 });
             }
         }
