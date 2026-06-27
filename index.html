@@ -42,7 +42,6 @@
         .btn-collect { background-color: #ff5722; padding: 12px; font-size: 16px; margin-top: 10px; }
         .panel-box { background: #fcfdfe; padding: 18px; border: 1px solid #bbb; border-radius: 10px; margin-top: 25px; }
         
-        /* 📱はみ出し対策：縦1列にゆったり並べる */
         .grid-1 { display: flex; flex-direction: column; gap: 0; }
         
         .btn-csv { background-color: #009688; font-size: 14px; padding: 10px; margin-top: 5px; }
@@ -59,8 +58,14 @@
         <p style="color:#666; margin-bottom:5px;">あなたの現在の未払合計額は...</p>
         <div id="unpaid-amount" style="font-size: 42px; font-weight: bold; color: #e53935; text-align: center; margin: 15px 0; background: #fff5f5; padding: 15px; border-radius: 8px; border: 1px solid #ffe3e3;">0 円</div>
         
+        <div id="user-unpaid-details-section" style="margin-top: 20px; display: none;">
+            <h3 style="color: #444; margin-bottom: 10px; font-size: 16px; border-left: 4px solid #e53935; padding-left: 8px;">📋 未払金の内訳</h3>
+            <div id="user-unpaid-container" style="background: #fff; border: 1px solid #ddd; border-radius: 8px; max-height: 180px; overflow-y: auto;">
+            </div>
+        </div>
+        
         <div style="margin-top: 25px;">
-            <h3 style="color: #444; margin-bottom: 10px; font-size: 16px;">📊 あなたの支払い履歴（済）</h3>
+            <h3 style="color: #444; margin-bottom: 10px; font-size: 16px;">📊 あなたの支払い履歴</h3>
             <div id="history-container" style="background: #fff; border: 1px solid #ddd; border-radius: 8px; max-height: 220px; overflow-y: auto;">
                 <p style="padding: 20px; color: #888; text-align: center; margin: 0;">履歴はありません</p>
             </div>
@@ -170,30 +175,29 @@
             }
 
             document.getElementById('unpaid-amount').innerText = Number(userInfo.totalAmount).toLocaleString() + " 円";
+            
+            // 📋【新機能】メンバー画面用の未払内訳レンダリングを実行
+            renderUserUnpaidDetails(userInfo.unpaidDetails, userInfo.totalAmount);
+            
             renderHistory(userInfo.history);
 
             if (userInfo.role === 'admin') {
                 document.getElementById('admin-view').style.display = 'block';
                 loadUnpaidList();
                 
-                // 📅 日付とイベント名の自動初期値計算
                 const today = new Date();
                 const y = today.getFullYear();
-                const m = today.getMonth() + 1; // 当月 (1〜12)
+                const m = today.getMonth() + 1; 
                 const mStr = String(m).padStart(2, '0');
                 
-                // 1. 始期のデフォルト（今月の初日）
                 document.getElementById('summary-start').value = `${y}-${mStr}-01`;
                 
-                // 2. 終期のデフォルト（今月の最終日）
                 const lastDay = new Date(y, m, 0).getDate();
                 const lastDayStr = String(lastDay).padStart(2, '0');
                 document.getElementById('summary-end').value = `${y}-${mStr}-${lastDayStr}`;
                 
-                // 3. 開催日のデフォルト（今日）
                 document.getElementById('event-date').value = `${y}-${mStr}-${String(today.getDate()).padStart(2, '0')}`;
                 
-                // 4. ★新機能：イベント名のデフォルト（操作日の翌月を YYYY.MM 形式で表示）
                 let nextYear = y;
                 let nextMonth = m + 1;
                 if (nextMonth > 12) {
@@ -206,6 +210,31 @@
             } else {
                 document.getElementById('user-view').style.display = 'block';
             }
+        }
+
+        // 📋【新機能】メンバー自身の未払内訳を画面に描画する
+        function renderUserUnpaidDetails(details, totalAmount) {
+            const section = document.getElementById('user-unpaid-details-section');
+            const container = document.getElementById('user-unpaid-container');
+            
+            // 未払がない、または合計が0円なら非表示
+            if (!details || details.length === 0 || totalAmount === 0) {
+                section.style.display = 'none';
+                return;
+            }
+            
+            section.style.display = 'block';
+            let html = '<ul style="list-style: none; padding: 0; margin: 0;">';
+            details.forEach(item => {
+                html += `
+                    <li style="display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border-bottom: 1px solid #edf0f2;">
+                        <span style="font-size: 15px; color:#333;">・${item.eventName}</span>
+                        <span style="font-weight: bold; color: #e53935; font-size: 16px;">${Number(item.amount).toLocaleString()} 円</span>
+                    </li>
+                `;
+            });
+            html += '</ul>';
+            container.innerHTML = html;
         }
 
         function renderHistory(historyItems) {
