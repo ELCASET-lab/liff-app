@@ -33,7 +33,6 @@
         .btn-collect { background-color: #ff9800; padding: 10px; font-size: 15px; margin-top: 12px; }
         .btn-absence-mini { width: auto; margin-top: 0; padding: 4px 10px; font-size: 12px; background-color: #2196F3; border-radius: 4px; box-shadow: none; }
         
-        /* 集計用パネルのスタイル */
         .panel-box { background: #fcfdfe; padding: 18px; border: 1px dashed #bbb; border-radius: 10px; margin-top: 25px; }
         .grid-2 { display: flex; gap: 10px; }
         .grid-2 .form-group { flex: 1; }
@@ -45,7 +44,6 @@
 
     <div id="loading">読み込み中...</div>
 
-    <!-- 一般メンバー用画面 -->
     <div id="user-view" class="container">
         <div class="role-badge role-user">メンバー</div>
         <h1>こんにちは、<span class="user-name"></span> さん</h1>
@@ -61,12 +59,10 @@
         <button class="btn-sub" onclick="liff.closeWindow()">アプリを閉じる</button>
     </div>
 
-    <!-- 会計役（管理者）用画面 -->
     <div id="admin-view" class="container">
         <div class="role-badge role-admin">会計 (管理者)</div>
         <h1>こんにちは、<span class="user-name"></span> さん</h1>
         
-        <!-- 未払メンバー一覧 -->
         <div style="margin-top: 20px;">
             <h3 style="color: #444; margin-bottom: 5px; font-size: 16px;">💰 現在の未払・欠席保留一覧</h3>
             <div id="unpaid-list-container" style="max-height: 300px; overflow-y: auto; padding: 2px;">
@@ -74,7 +70,6 @@
             </div>
         </div>
 
-        <!-- ★新機能：データ集計・出力パネル -->
         <div class="panel-box">
             <h3>📊 期間データの集計・出力</h3>
             <div class="grid-2">
@@ -96,7 +91,6 @@
             <p style="font-size: 11px; color:#777; margin-top:5px; text-align:left; line-height:1.3;">※LINEアプリ内では直接ダウンロードが動かない場合があります。その場合は「メール送信」をご利用ください。</p>
         </div>
 
-        <!-- 新規イベント登録フォーム -->
         <div class="panel-box" style="border-style: dashed;">
             <h3>🍻 新しい飲み会の登録</h3>
             <div class="form-group">
@@ -168,19 +162,16 @@
                 document.getElementById('admin-view').style.display = 'block';
                 loadUnpaidList();
                 
-                // 集計日付の初期値として今月の1日〜末日を入れてあげる親切設計
                 const today = new Date();
                 const y = today.getFullYear();
                 const m = String(today.getMonth() + 1).padStart(2, '0');
                 document.getElementById('summary-start').value = `${y}-${m}-01`;
-                // 末日は簡易的に31日に設定（ブラウザ側で補正されます）
                 document.getElementById('summary-end').value = `${y}-${m}-31`;
             } else {
                 document.getElementById('user-view').style.display = 'block';
             }
         }
 
-        // 支払い履歴の描画
         function renderHistory(historyItems) {
             const historyContainer = document.getElementById('history-container');
             if(!historyItems || historyItems.length === 0) {
@@ -204,7 +195,6 @@
             historyContainer.innerHTML = html;
         }
 
-        // 未払リスト（カード型）を描画
         function loadUnpaidList() {
             fetch(GAS_WEB_APP_URL, {
                 method: "POST",
@@ -254,14 +244,14 @@
             });
         }
 
-        // ★新機能：CSVダウンロード処理
+        // ★新機能：CSVダウンロード側の組み立ても新しい明細形式（6列）に完全同期
         function downloadCSVSummary() {
             const start = document.getElementById('summary-start').value;
             const end = document.getElementById('summary-end').value;
             if(!start || !end) { alert("始期と終期を入力してください"); return; }
 
             document.getElementById('loading').style.display = 'block';
-            document.getElementById('loading').innerText = "集計データを作成中...";
+            document.getElementById('loading').innerText = "集計明細を作成中...";
 
             fetch(GAS_WEB_APP_URL, {
                 method: "POST",
@@ -272,17 +262,16 @@
                 document.getElementById('loading').style.display = 'none';
                 if (response.success) {
                     const items = response.data;
-                    // Excel用BOM付きUTF-8
-                    let csv = "\uFEFFメンバー名,期間内支払済合計(円),期間内未払合計(円)\n";
+                    // 新しい明細レイアウトのヘッダー
+                    let csv = "\uFEFFイベント名,開催日,メンバー名,支払済額(円),未払額(円),状態\n";
                     items.forEach(item => {
-                        csv += `"${item.name}",${item.paid},${item.unpaid}\n`;
+                        csv += `"${item.eventName}","${item.eventDate}","${item.memberName}",${item.paid},${item.unpaid},"${item.status}"\n`;
                     });
 
-                    // ダウンロード処理をキック
                     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
                     const link = document.createElement("a");
                     link.href = URL.createObjectURL(blob);
-                    link.setAttribute("download", `5日会集計_${start}_to_${end}.csv`);
+                    link.setAttribute("download", `5日会集計明細_${start}_to_${end}.csv`);
                     document.body.appendChild(link);
                     link.click();
                     document.body.removeChild(link);
@@ -296,7 +285,6 @@
             });
         }
 
-        // ★新機能：メール送信処理
         function sendEmailSummary() {
             const start = document.getElementById('summary-start').value;
             const end = document.getElementById('summary-end').value;
@@ -305,7 +293,7 @@
             if(!start || !end || !email) { alert("始期、終期、メールアドレスをすべて入力してください"); return; }
 
             document.getElementById('loading').style.display = 'block';
-            document.getElementById('loading').innerText = "集計CSVをメール送信中...";
+            document.getElementById('loading').innerText = "集計明細CSVをメール送信中...";
 
             fetch(GAS_WEB_APP_URL, {
                 method: "POST",
@@ -315,7 +303,7 @@
             .then(response => {
                 document.getElementById('loading').style.display = 'none';
                 if (response.success) {
-                    alert(`指定されたアドレス（${email}）に\n集計CSVファイルを送信しました！`);
+                    alert(`指定されたアドレスに\n集計明細CSVファイルを送信しました！`);
                 } else {
                     alert("送信エラー: " + response.error);
                 }
@@ -326,7 +314,6 @@
             });
         }
 
-        // 一括回収
         function collectPaymentBulk(paymentIds, name, totalAmount) {
             if (confirm(`${name} さんから総額 ${totalAmount.toLocaleString()} 円を一括回収しましたか？`)) {
                 document.getElementById('loading').style.display = 'block';
@@ -341,7 +328,6 @@
             }
         }
 
-        // 欠席
         function collectAbsence(paymentId, name, eventName) {
             if (confirm(`${name} さんの「${eventName}」を欠席にしますか？`)) {
                 document.getElementById('loading').style.display = 'block';
@@ -356,7 +342,6 @@
             }
         }
 
-        // イベント登録
         function submitNewEvent() {
             const name = document.getElementById('event-name').value;
             const date = document.getElementById('event-date').value;
