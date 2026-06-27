@@ -8,7 +8,7 @@
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 15px; background-color: #f5f7f8; color: #333; font-size: 16px; }
         h1 { color: #222; font-size: 22px; border-bottom: 3px solid #06C755; padding-bottom: 8px; margin-top: 5px; }
-        h3 { font-size: 17px; margin-top: 0; margin-bottom: 12px; color: #444; }
+        h3 { font-size: 17px; margin-top: 0; margin-bottom: 12px; color: #444; border-left: 4px solid #06C755; padding-left: 8px; }
         .container { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 15px; box-sizing: border-box; }
         #loading { text-align: center; margin-top: 80px; font-weight: bold; font-size: 18px; color: #666; }
         #admin-view, #user-view { display: none; }
@@ -16,7 +16,7 @@
         .role-admin { background-color: #e53935; }
         .role-user { background-color: #06C755; }
         
-        .form-group { margin-bottom: 18px; text-align: left; }
+        .form-group { margin-bottom: 15px; text-align: left; }
         .form-group label { display: block; font-size: 14px; color: #555; margin-bottom: 6px; font-weight: bold; }
         .form-group input { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
         
@@ -26,20 +26,26 @@
         
         .history-list { list-style: none; padding: 0; margin: 0; }
         .history-item { display: flex; justify-content: space-between; align-items: center; padding: 14px 10px; border-bottom: 1px solid #edf0f2; }
-        .history-info { font-size: 15px; text-align: left; }
         
-        /* メンバー専用カードのデザイン */
-        .member-card { border: 1px solid #e0e4e7; border-radius: 10px; margin-bottom: 12px; padding: 15px; background: #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.02); }
+        .member-card { border: 1px solid #e0e4e7; border-radius: 10px; margin-bottom: 12px; padding: 15px; background: #fff; }
         .card-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f0f2f4; padding-bottom: 8px; margin-bottom: 10px; }
-        .detail-row { display: flex; justify-content: space-between; align-items: center; font-size: 14px; color: #555; margin-bottom: 6px; padding: 2px 0; }
+        .detail-row { display: flex; justify-content: space-between; align-items: center; font-size: 14px; color: #555; margin-bottom: 6px; }
         .btn-collect { background-color: #ff9800; padding: 10px; font-size: 15px; margin-top: 12px; }
         .btn-absence-mini { width: auto; margin-top: 0; padding: 4px 10px; font-size: 12px; background-color: #2196F3; border-radius: 4px; box-shadow: none; }
+        
+        /* 集計用パネルのスタイル */
+        .panel-box { background: #fcfdfe; padding: 18px; border: 1px dashed #bbb; border-radius: 10px; margin-top: 25px; }
+        .grid-2 { display: flex; gap: 10px; }
+        .grid-2 .form-group { flex: 1; }
+        .btn-csv { background-color: #2196F3; font-size: 14px; padding: 10px; margin-top: 5px; }
+        .btn-email { background-color: #673ab7; font-size: 14px; padding: 10px; margin-top: 5px; }
     </style>
 </head>
 <body>
 
     <div id="loading">読み込み中...</div>
 
+    <!-- 一般メンバー用画面 -->
     <div id="user-view" class="container">
         <div class="role-badge role-user">メンバー</div>
         <h1>こんにちは、<span class="user-name"></span> さん</h1>
@@ -55,19 +61,44 @@
         <button class="btn-sub" onclick="liff.closeWindow()">アプリを閉じる</button>
     </div>
 
+    <!-- 会計役（管理者）用画面 -->
     <div id="admin-view" class="container">
         <div class="role-badge role-admin">会計 (管理者)</div>
         <h1>こんにちは、<span class="user-name"></span> さん</h1>
         
+        <!-- 未払メンバー一覧 -->
         <div style="margin-top: 20px;">
             <h3 style="color: #444; margin-bottom: 5px; font-size: 16px;">💰 現在の未払・欠席保留一覧</h3>
-            <div id="unpaid-list-container" style="max-height: 380px; overflow-y: auto; padding: 2px;">
+            <div id="unpaid-list-container" style="max-height: 300px; overflow-y: auto; padding: 2px;">
                 <p style="padding: 20px; color: #888; text-align: center; background: #fff; border-radius: 8px; border:1px solid #ddd;">未払いのメンバーはいません</p>
             </div>
         </div>
 
-        <div style="background: #fcfdfe; padding: 18px; border: 1px dashed #bbb; border-radius: 10px; margin-top: 25px;">
-            <h3 style="margin-top: 0; color: #333; font-size: 17px;">🍻 新しい飲み会の登録</h3>
+        <!-- ★新機能：データ集計・出力パネル -->
+        <div class="panel-box">
+            <h3>📊 期間データの集計・出力</h3>
+            <div class="grid-2">
+                <div class="form-group">
+                    <label>始期（開始日）</label>
+                    <input type="date" id="summary-start">
+                </div>
+                <div class="form-group">
+                    <label>終期（終了日）</label>
+                    <input type="date" id="summary-end">
+                </div>
+            </div>
+            <div class="form-group" style="margin-bottom: 10px;">
+                <label>送信先メールアドレス</label>
+                <input type="email" id="summary-email" placeholder="example@gmail.com">
+            </div>
+            <button class="btn-email" onclick="sendEmailSummary()">📧 指定アドレスにCSVをメール送信</button>
+            <button class="btn-csv" onclick="downloadCSVSummary()">💾 スマホにCSVをダウンロード</button>
+            <p style="font-size: 11px; color:#777; margin-top:5px; text-align:left; line-height:1.3;">※LINEアプリ内では直接ダウンロードが動かない場合があります。その場合は「メール送信」をご利用ください。</p>
+        </div>
+
+        <!-- 新規イベント登録フォーム -->
+        <div class="panel-box" style="border-style: dashed;">
+            <h3>🍻 新しい飲み会の登録</h3>
             <div class="form-group">
                 <label>イベント名</label>
                 <input type="text" id="event-name" placeholder="例：6月度 飲み会">
@@ -80,7 +111,7 @@
                 <label>会費 (円)</label>
                 <input type="number" id="event-amount" value="5000">
             </div>
-            <button onclick="submitNewEvent()">この内容で集集を開始する</button>
+            <button onclick="submitNewEvent()">この内容で集金を開始する</button>
         </div>
 
         <button class="btn-sub" onclick="switchToUserView()">メンバー画面として表示</button>
@@ -136,11 +167,20 @@
             if (userInfo.role === 'admin') {
                 document.getElementById('admin-view').style.display = 'block';
                 loadUnpaidList();
+                
+                // 集計日付の初期値として今月の1日〜末日を入れてあげる親切設計
+                const today = new Date();
+                const y = today.getFullYear();
+                const m = String(today.getMonth() + 1).padStart(2, '0');
+                document.getElementById('summary-start').value = `${y}-${m}-01`;
+                // 末日は簡易的に31日に設定（ブラウザ側で補正されます）
+                document.getElementById('summary-end').value = `${y}-${m}-31`;
             } else {
                 document.getElementById('user-view').style.display = 'block';
             }
         }
 
+        // 支払い履歴の描画
         function renderHistory(historyItems) {
             const historyContainer = document.getElementById('history-container');
             if(!historyItems || historyItems.length === 0) {
@@ -164,7 +204,7 @@
             historyContainer.innerHTML = html;
         }
 
-        // ★進化版：メンバーごとのカード型リストを描画する
+        // 未払リスト（カード型）を描画
         function loadUnpaidList() {
             fetch(GAS_WEB_APP_URL, {
                 method: "POST",
@@ -183,9 +223,7 @@
                     
                     let html = '';
                     members.forEach(m => {
-                        // このメンバーが抱えるすべての未払IDを配列化して、ボタンに持たせる
                         const pIdsJson = JSON.stringify(m.payments.map(p => p.paymentId));
-                        
                         html += `
                             <div class="member-card">
                                 <div class="card-header">
@@ -194,8 +232,6 @@
                                 </div>
                                 <div style="margin-bottom: 10px;">
                         `;
-                        
-                        // 内訳のループ
                         m.payments.forEach(p => {
                             html += `
                                 <div class="detail-row">
@@ -207,110 +243,136 @@
                                 </div>
                             `;
                         });
-                        
                         html += `
                                 </div>
                                 <button class="btn-collect" onclick='collectPaymentBulk(${pIdsJson}, "${m.memberName}", ${m.totalAmount})'>💸 総額を一括回収する</button>
                             </div>
                         `;
                     });
-                    
                     listContainer.innerHTML = html;
                 }
             });
         }
 
-        // ★進化版：一括回収ボタンの処理
+        // ★新機能：CSVダウンロード処理
+        function downloadCSVSummary() {
+            const start = document.getElementById('summary-start').value;
+            const end = document.getElementById('summary-end').value;
+            if(!start || !end) { alert("始期と終期を入力してください"); return; }
+
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('loading').innerText = "集計データを作成中...";
+
+            fetch(GAS_WEB_APP_URL, {
+                method: "POST",
+                body: JSON.stringify({ action: 'getSummaryData', startDate: start, endDate: end })
+            })
+            .then(res => res.json())
+            .then(response => {
+                document.getElementById('loading').style.display = 'none';
+                if (response.success) {
+                    const items = response.data;
+                    // Excel用BOM付きUTF-8
+                    let csv = "\uFEFFメンバー名,期間内支払済合計(円),期間内未払合計(円)\n";
+                    items.forEach(item => {
+                        csv += `"${item.name}",${item.paid},${item.unpaid}\n`;
+                    });
+
+                    // ダウンロード処理をキック
+                    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                    const link = document.createElement("a");
+                    link.href = URL.createObjectURL(blob);
+                    link.setAttribute("download", `5日会集計_${start}_to_${end}.csv`);
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                } else {
+                    alert("集計エラー: " + response.error);
+                }
+            })
+            .catch(err => {
+                document.getElementById('loading').style.display = 'none';
+                alert("通信エラー: " + err);
+            });
+        }
+
+        // ★新機能：メール送信処理
+        function sendEmailSummary() {
+            const start = document.getElementById('summary-start').value;
+            const end = document.getElementById('summary-end').value;
+            const email = document.getElementById('summary-email').value;
+            
+            if(!start || !end || !email) { alert("始期、終期、メールアドレスをすべて入力してください"); return; }
+
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('loading').innerText = "集計CSVをメール送信中...";
+
+            fetch(GAS_WEB_APP_URL, {
+                method: "POST",
+                body: JSON.stringify({ action: 'sendSummaryEmail', startDate: start, endDate: end, email: email })
+            })
+            .then(res => res.json())
+            .then(response => {
+                document.getElementById('loading').style.display = 'none';
+                if (response.success) {
+                    alert(`指定されたアドレス（${email}）に\n集計CSVファイルを送信しました！`);
+                } else {
+                    alert("送信エラー: " + response.error);
+                }
+            })
+            .catch(err => {
+                document.getElementById('loading').style.display = 'none';
+                alert("通信エラー: " + err);
+            });
+        }
+
+        // 一括回収
         function collectPaymentBulk(paymentIds, name, totalAmount) {
-            if (confirm(`${name} さんから総額 ${totalAmount.toLocaleString()} 円を一括回収しましたか？\n内訳のデータをすべて「済」に更新します。`)) {
+            if (confirm(`${name} さんから総額 ${totalAmount.toLocaleString()} 円を一括回収しましたか？`)) {
                 document.getElementById('loading').style.display = 'block';
-                document.getElementById('loading').innerText = "一括回収を記録中...";
-                
                 fetch(GAS_WEB_APP_URL, {
                     method: "POST",
-                    body: JSON.stringify({
-                        action: 'recordPayment',
-                        paymentIds: paymentIds // 配列で送る
-                    })
+                    body: JSON.stringify({ action: 'recordPayment', paymentIds: paymentIds })
                 })
                 .then(res => res.json())
                 .then(response => {
-                    document.getElementById('loading').style.display = 'none';
-                    if (response.success) {
-                        alert("一括回収を記録しました！");
-                        location.reload();
-                    } else {
-                        alert("エラー: " + response.error);
-                    }
-                })
-                .catch(err => {
-                    document.getElementById('loading').style.display = 'none';
-                    alert("通信エラー: " + err);
+                    if (response.success) { alert("一括回収を記録しました！"); location.reload(); }
                 });
             }
         }
 
-        // 「欠席」ボタン処理（特定のイベント単体に対して作用する）
+        // 欠席
         function collectAbsence(paymentId, name, eventName) {
-            if (confirm(`${name} さんの「${eventName}」を欠席にしますか？\nこのイベントの請求を2,000円（積立のみ）に減額し、未払いで残します。`)) {
+            if (confirm(`${name} さんの「${eventName}」を欠席にしますか？`)) {
                 document.getElementById('loading').style.display = 'block';
-                document.getElementById('loading').innerText = "欠席データを処理中...";
-                
                 fetch(GAS_WEB_APP_URL, {
                     method: "POST",
                     body: JSON.stringify({ action: 'recordAbsence', paymentId: paymentId })
                 })
                 .then(res => res.json())
                 .then(response => {
-                    document.getElementById('loading').style.display = 'none';
-                    if (response.success) {
-                        alert("欠席（積立金保留）を記録しました！");
-                        location.reload();
-                    } else {
-                        alert("エラー: " + response.error);
-                    }
+                    if (response.success) { alert("欠席を記録しました！"); location.reload(); }
                 });
             }
         }
 
-        // 新規イベント登録
+        // イベント登録
         function submitNewEvent() {
             const name = document.getElementById('event-name').value;
             const date = document.getElementById('event-date').value;
             const amount = document.getElementById('event-amount').value;
-
-            if (!name || !date || !amount) {
-                alert("すべての項目を入力してください！");
-                return;
-            }
+            if (!name || !date || !amount) { alert("すべての項目を入力してください！"); return; }
 
             if (confirm(`「${name}」を登録し、メンバー全員の集金データを作成します。よろしいですか？`)) {
                 document.getElementById('loading').style.display = 'block';
-                document.getElementById('loading').innerText = "スプレッドシートに書き込み中...";
                 document.getElementById('admin-view').style.display = 'none';
-
                 fetch(GAS_WEB_APP_URL, {
                     method: "POST",
-                    body: JSON.stringify({
-                        action: 'createEvent',
-                        eventName: name,
-                        eventDate: date,
-                        amount: amount
-                    })
+                    body: JSON.stringify({ action: 'createEvent', eventName: name, eventDate: date, amount: amount })
                 })
                 .then(res => res.json())
                 .then(response => {
-                    document.getElementById('loading').style.display = 'none';
-                    document.getElementById('admin-view').style.display = 'block';
-                    
-                    if(response.success) {
-                        alert(`登録完了！\n未払データを作成しました！`);
-                        document.getElementById('event-name').value = "";
-                        document.getElementById('event-date').value = "";
-                        loadUnpaidList();
-                    } else {
-                        alert("登録エラー: " + response.error);
-                    }
+                    if(response.success) { alert(`登録完了！`); document.getElementById('event-name').value = ""; document.getElementById('event-date').value = ""; location.reload(); }
                 });
             }
         }
