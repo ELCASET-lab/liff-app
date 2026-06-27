@@ -53,18 +53,21 @@
 
     <div id="loading">読み込み中...</div>
 
+    <!-- 一般メンバー用画面 -->
     <div id="user-view" class="container">
         <div class="role-badge role-user">メンバー</div>
         <h1><span class="user-name"></span> さん</h1>
         <p style="color:#666; margin-bottom:5px;">あなたの現在の未払合計額は...</p>
         <div id="unpaid-amount" style="font-size: 42px; font-weight: bold; color: #e53935; text-align: center; margin: 15px 0; background: #fff5f5; padding: 15px; border-radius: 8px; border: 1px solid #ffe3e3;">0 円</div>
         
+        <!-- メンバー本人の「未払金の内訳」表示エリア -->
         <div id="user-unpaid-details-section" style="margin-top: 20px; display: none;">
             <h3 style="color: #444; margin-bottom: 10px; font-size: 16px; border-left: 4px solid #e53935; padding-left: 8px;">📋 未払金の内訳</h3>
             <div id="user-unpaid-container" style="background: #fff; border: 1px solid #ddd; border-radius: 8px; max-height: 180px; overflow-y: auto;">
             </div>
         </div>
         
+        <!-- あなたの支払い履歴 -->
         <div style="margin-top: 25px;">
             <h3 style="color: #444; margin-bottom: 10px; font-size: 16px;">📊 あなたの支払い履歴</h3>
             <div id="history-container" style="background: #fff; border: 1px solid #ddd; border-radius: 8px; max-height: 220px; overflow-y: auto;">
@@ -74,10 +77,12 @@
         <button class="btn-sub" onclick="liff.closeWindow()">閉じる</button>
     </div>
 
+    <!-- 会計役（管理者）用画面 -->
     <div id="admin-view" class="container">
         <div class="role-badge role-admin">会計 (管理者)</div>
         <h1><span class="user-name"></span> さん</h1>
         
+        <!-- 未払メンバー一覧 -->
         <div style="margin-top: 20px;">
             <h3 style="color: #444; margin-bottom: 5px; font-size: 16px;">💰 現在のメンバーの状況</h3>
             <div id="unpaid-list-container" style="max-height: 320px; overflow-y: auto; padding: 2px;">
@@ -85,6 +90,7 @@
             </div>
         </div>
 
+        <!-- 新規登録フォーム -->
         <div class="panel-box" style="border-style: dashed; background-color: #fff;">
             <h3>🍻 新規登録</h3>
             <div class="form-group">
@@ -108,6 +114,7 @@
             <button onclick="submitNewEvent()">この内容で集金開始</button>
         </div>
 
+        <!-- 期間データを出力 -->
         <div class="panel-box">
             <h3>📊 期間データを出力</h3>
             <div class="grid-1">
@@ -125,9 +132,6 @@
                 <input type="email" id="summary-email" placeholder="example@gmail.com">
             </div>
             <button class="btn-email" onclick="sendEmailSummary()">📧 指定アドレスにCSVを送信</button>
-<!--
-            <button class="btn-csv" onclick="downloadCSVSummary()">💾 スマホにCSVをダウンロード</button>
--->
         </div>
 
         <button class="btn-sub" onclick="switchToUserView()">メンバー権限で表示</button>
@@ -143,35 +147,42 @@
                 if (!liff.isLoggedIn()) {
                     liff.login();
                 } else {
-                    liff.getProfile().then(profile => {
-                        fetch(GAS_WEB_APP_URL, {
-                            method: "POST",
-                            body: JSON.stringify({
-                                action: 'login',
-                                userId: profile.userId,
-                                displayName: profile.displayName
-                            })
-                        })
-                        .then(res => res.json())
-                        .then(response => {
-                            if(response.success) {
-                                onLoginSuccess(response.data);
-                            } else {
-                                alert("GAS処理エラー: " + response.error);
-                            }
-                        })
-                        .catch(err => {
-                            alert("通信エラー: " + err);
-                        });
-                    });
+                    // 初回のみ全画面の読込（リフレッシュトークン対応）
+                    refreshAllData();
                 }
             })
             .catch((err) => {
                 document.body.innerHTML = "初期化エラー: " + err;
             });
 
+        // 🔄【新設】裏でデータをまるごと最新の状態に「無振動」で引き直す超高速関数
+        function refreshAllData() {
+            liff.getProfile().then(profile => {
+                fetch(GAS_WEB_APP_URL, {
+                    method: "POST",
+                    body: JSON.stringify({
+                        action: 'login',
+                        userId: profile.userId,
+                        displayName: profile.displayName
+                    })
+                })
+                .then(res => res.json())
+                .then(response => {
+                    document.getElementById('loading').style.display = 'none';
+                    if(response.success) {
+                        onLoginSuccess(response.data);
+                    } else {
+                        alert("GAS処理エラー: " + response.error);
+                    }
+                })
+                .catch(err => {
+                    document.getElementById('loading').style.display = 'none';
+                    alert("通信エラー: " + err);
+                });
+            });
+        }
+
         function onLoginSuccess(userInfo) {
-            document.getElementById('loading').style.display = 'none';
             const nameElements = document.getElementsByClassName('user-name');
             for(let i=0; i<nameElements.length; i++) {
                 nameElements[i].innerText = userInfo.name;
@@ -183,30 +194,32 @@
 
             if (userInfo.role === 'admin') {
                 document.getElementById('admin-view').style.display = 'block';
-                loadUnpaidList();
+                loadUnpaidList(); // 管理者リストの読込
                 
-                const today = new Date();
-                const y = today.getFullYear();
-                const m = today.getMonth() + 1; 
-                const mStr = String(m).padStart(2, '0');
-                
-                document.getElementById('summary-start').value = `${y}-${mStr}-01`;
-                
-                const lastDay = new Date(y, m, 0).getDate();
-                const lastDayStr = String(lastDay).padStart(2, '0');
-                document.getElementById('summary-end').value = `${y}-${mStr}-${lastDayStr}`;
-                
-                document.getElementById('event-date').value = `${y}-${mStr}-${String(today.getDate()).padStart(2, '0')}`;
-                
-                let nextYear = y;
-                let nextMonth = m + 1;
-                if (nextMonth > 12) {
-                    nextMonth = 1;
-                    nextYear += 1;
+                // 初回だけ日付の初期値をセット（すでに入力されていれば上書きしない親切設計）
+                if(!document.getElementById('summary-start').value) {
+                    const today = new Date();
+                    const y = today.getFullYear();
+                    const m = today.getMonth() + 1; 
+                    const mStr = String(m).padStart(2, '0');
+                    
+                    document.getElementById('summary-start').value = `${y}-${mStr}-01`;
+                    
+                    const lastDay = new Date(y, m, 0).getDate();
+                    const lastDayStr = String(lastDay).padStart(2, '0');
+                    document.getElementById('summary-end').value = `${y}-${mStr}-${lastDayStr}`;
+                    
+                    document.getElementById('event-date').value = `${y}-${mStr}-${String(today.getDate()).padStart(2, '0')}`;
+                    
+                    let nextYear = y;
+                    let nextMonth = m + 1;
+                    if (nextMonth > 12) {
+                        nextMonth = 1;
+                        nextYear += 1;
+                    }
+                    const nextMonthStr = String(nextMonth).padStart(2, '0');
+                    document.getElementById('event-name').value = `${nextYear}.${nextMonthStr}`;
                 }
-                const nextMonthStr = String(nextMonth).padStart(2, '0');
-                document.getElementById('event-name').value = `${nextYear}.${nextMonthStr}`;
-                
             } else {
                 document.getElementById('user-view').style.display = 'block';
             }
@@ -248,6 +261,7 @@
                     <li class="history-item">
                         <div class="history-info">
                             <strong>${item.eventName}</strong><br>
+                            <!-- Hideakiさんカスタムの半角コロンを完全継承！ -->
                             <span style="font-size:12px; color:#666;">支払日:${dateStr}</span>
                         </div>
                         <div style="font-weight:bold; color:#06C755; font-size:17px;">${Number(item.amount).toLocaleString()} 円</div>
@@ -312,41 +326,6 @@
             });
         }
 
-        function downloadCSVSummary() {
-            const start = document.getElementById('summary-start').value;
-            const end = document.getElementById('summary-end').value;
-            if(!start || !end) { alert("始期と終期を入力してください"); return; }
-
-            document.getElementById('loading').style.display = 'block';
-            document.getElementById('loading').innerText = "集計明細を作成中...";
-
-            fetch(GAS_WEB_APP_URL, {
-                method: "POST",
-                body: JSON.stringify({ action: 'getSummaryData', startDate: start, endDate: end })
-            })
-            .then(res => res.json())
-            .then(response => {
-                document.getElementById('loading').style.display = 'none';
-                if (response.success) {
-                    const items = response.data;
-                    let csv = "\uFEFFイベント名,開催日,メンバー名,支払済額(円),未払額(円),状態\n";
-                    items.forEach(item => {
-                        csv += `"${item.eventName}","${item.eventDate}","${item.memberName}",${item.paid},${item.unpaid},"${item.status}"\n`;
-                    });
-
-                    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-                    const link = document.createElement("a");
-                    link.href = URL.createObjectURL(blob);
-                    link.setAttribute("download", `5日会集計明細_${start}_to_${end}.csv`);
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                } else {
-                    alert("集計エラー: " + response.error);
-                }
-            });
-        }
-
         function sendEmailSummary() {
             const start = document.getElementById('summary-start').value;
             const end = document.getElementById('summary-end').value;
@@ -355,7 +334,6 @@
             if(!start || !end || !email) { alert("始期、終期、メールアドレスをすべて入力してください"); return; }
 
             document.getElementById('loading').style.display = 'block';
-            document.getElementById('loading').innerText = "集計明細CSVをメール送信中...";
 
             fetch(GAS_WEB_APP_URL, {
                 method: "POST",
@@ -372,6 +350,7 @@
             });
         }
 
+        // ⚡【爆速化】回収処理成功時、location.reload() を撤廃！[cite: 1]
         function collectPaymentBulk(paymentIds, name, amount) {
             const isBulk = paymentIds.length > 1;
             const msg = isBulk ? 
@@ -386,11 +365,23 @@
                 })
                 .then(res => res.json())
                 .then(response => {
-                    if (response.success) { alert("回収を記録しました！"); location.reload(); }
+                    if (response.success) { 
+                        alert("回収を記録しました！"); 
+                        // ⭕ 画面をリロードせず、未払リストとログイン情報（自分用）だけをシュッと部分更新！[cite: 1]
+                        refreshAllData(); 
+                    } else {
+                        document.getElementById('loading').style.display = 'none';
+                        alert("エラーが発生しました: " + response.error);
+                    }
+                })
+                .catch(err => {
+                    document.getElementById('loading').style.display = 'none';
+                    alert("通信エラー: " + err);
                 });
             }
         }
 
+        // ⚡【爆速化】欠席処理成功時、location.reload() を撤廃！[cite: 1]
         function collectAbsence(paymentId, name, eventName) {
             if (confirm(`${name} さんの「${eventName}」を欠席にしますか？\nこのイベントの請求を設定された積立金に変更し、未払いで次回へ繰り越します。`)) {
                 document.getElementById('loading').style.display = 'block';
@@ -400,11 +391,23 @@
                 })
                 .then(res => res.json())
                 .then(response => {
-                    if (response.success) { alert("欠席（積立金保留）を記録しました！"); location.reload(); }
+                    if (response.success) { 
+                        alert("欠席（積立金保留）を記録しました！"); 
+                        // ⭕ リロードせずに部分再取得するため、100%データは正確なまま爆速更新！[cite: 1]
+                        refreshAllData(); 
+                    } else {
+                        document.getElementById('loading').style.display = 'none';
+                        alert("エラーが発生しました: " + response.error);
+                    }
+                })
+                .catch(err => {
+                    document.getElementById('loading').style.display = 'none';
+                    alert("通信エラー: " + err);
                 });
             }
         }
 
+        // 新規イベント登録成功時
         function submitNewEvent() {
             const name = document.getElementById('event-name').value;
             const date = document.getElementById('event-date').value;
@@ -428,7 +431,15 @@
                 })
                 .then(res => res.json())
                 .then(response => {
-                    if(response.success) { alert(`登録完了！`); location.reload(); }
+                    if(response.success) { 
+                        alert(`登録完了！`); 
+                        // 入力欄だけ綺麗にして部分再取得！
+                        document.getElementById('event-name').value = "";
+                        refreshAllData(); 
+                    } else {
+                        alert("エラー: " + response.error);
+                        refreshAllData();
+                    }
                 });
             }
         }
