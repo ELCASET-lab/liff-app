@@ -30,12 +30,10 @@
         .member-card { border: 1px solid #e0e4e7; border-radius: 10px; margin-bottom: 12px; padding: 15px; background: #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.02); }
         .card-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f0f2f4; padding-bottom: 8px; margin-bottom: 12px; }
         
-        /* 明細行と個別アクションボタンの配置 */
         .detail-row { display: flex; justify-content: space-between; align-items: center; font-size: 14px; color: #444; margin-bottom: 10px; padding: 4px 0; border-bottom: 1px dotted #f0f0f0; }
         .detail-row:last-child { border-bottom: none; }
         .btn-actions-mini { display: flex; gap: 5px; align-items: center; }
         
-        /* ミニボタンの装飾 */
         .btn-mini { width: auto; margin-top: 0; padding: 5px 10px; font-size: 12px; border-radius: 5px; font-weight: bold; box-shadow: none; }
         .btn-individual-collect { background-color: #ff9800; color: white; }
         .btn-absence-mini { background-color: #2196F3; color: white; }
@@ -43,8 +41,10 @@
         
         .btn-collect { background-color: #ff5722; padding: 12px; font-size: 16px; margin-top: 10px; }
         .panel-box { background: #fcfdfe; padding: 18px; border: 1px dashed #bbb; border-radius: 10px; margin-top: 25px; }
-        .grid-2 { display: flex; gap: 10px; }
-        .grid-2 .form-group { flex: 1; }
+        
+        /* 📱はみ出し対策：2分割グリッドをやめ、スマホでは1行ずつ縦に並べる */
+        .grid-2 { display: flex; flex-direction: column; gap: 0; }
+        
         .btn-csv { background-color: #009688; font-size: 14px; padding: 10px; margin-top: 5px; }
         .btn-email { background-color: #673ab7; font-size: 14px; padding: 10px; margin-top: 5px; }
     </style>
@@ -100,7 +100,7 @@
         </div>
 
         <div class="panel-box" style="border-style: dashed;">
-            <h3>🍻 新しい飲み会の登録</h3>
+            <h3>🍻 新規登録</h3>
             <div class="form-group">
                 <label>イベント名</label>
                 <input type="text" id="event-name" placeholder="例：7月度 定例会">
@@ -109,20 +109,20 @@
                 <label>開催日</label>
                 <input type="date" id="event-date">
             </div>
-            <div class="grid-2">
-                <div class="form-group">
+            <div style="display:flex; gap:10px;">
+                <div class="form-group" style="flex:1;">
                     <label>会費総額 (円)</label>
                     <input type="number" id="event-amount" value="5000">
                 </div>
-                <div class="form-group">
+                <div class="form-group" style="flex:1;">
                     <label>うち積立金 (円)</label>
                     <input type="number" id="event-save-amount" value="2000">
                 </div>
             </div>
-            <button onclick="submitNewEvent()">この内容で集金を開始する</button>
+            <button onclick="submitNewEvent()">この内容で集金開始</button>
         </div>
 
-        <button class="btn-sub" onclick="switchToUserView()">メンバー画面として表示</button>
+        <button class="btn-sub" onclick="switchToUserView()">メンバー権限で画面を表示</button>
     </div>
 
     <script>
@@ -176,11 +176,28 @@
                 document.getElementById('admin-view').style.display = 'block';
                 loadUnpaidList();
                 
+                // 📅【新機能】始期・終期・イベント名のデフォルト値を自動計算して代入
                 const today = new Date();
                 const y = today.getFullYear();
-                const m = String(today.getMonth() + 1).padStart(2, '0');
-                document.getElementById('summary-start').value = `${y}-${m}-01`;
-                document.getElementById('summary-end').value = `${y}-${m}-31`;
+                const m = today.getMonth() + 1; // 1〜12月
+                const mStr = String(m).padStart(2, '0');
+                
+                // 1. 始期のデフォルト（今月の初日）
+                document.getElementById('summary-start').value = `${y}-${mStr}-01`;
+                
+                // 2. 終期のデフォルト（今月の最終日を計算）
+                const lastDay = new Date(y, m, 0).getDate(); // 翌月の0日 ＝ 今月の末日
+                const lastDayStr = String(lastDay).padStart(2, '0');
+                document.getElementById('summary-end').value = `${y}-${mStr}-${lastDayStr}`;
+                
+                // 3. 新規登録のイベント名デフォルト（令和○年○月の会）
+                const reiwaYear = y - 2018; // 2026年の場合、2026-2018 = 8（令和8年）
+                document.getElementById('event-name').value = `令和${reiwaYear}年${m}月の会`;
+                
+                // 4. 新規登録の開催日デフォルト（今日の日付）
+                const dStr = String(today.getDate()).padStart(2, '0');
+                document.getElementById('event-date').value = `${y}-${mStr}-${dStr}`;
+                
             } else {
                 document.getElementById('user-view').style.display = 'block';
             }
@@ -209,7 +226,6 @@
             historyContainer.innerHTML = html;
         }
 
-        // 未払リストの描画（★個別回収ボタン ＆ 欠席判定対応）
         function loadUnpaidList() {
             fetch(GAS_WEB_APP_URL, {
                 method: "POST",
@@ -238,14 +254,12 @@
                                 <div style="margin-bottom: 5px;">
                         `;
                         
-                        // 内訳のループ
                         m.payments.forEach(p => {
                             html += `
                                 <div class="detail-row">
                                     <span style="text-align:left;">・${p.eventName} (<strong>${p.amount.toLocaleString()}円</strong>)</span>
                                     <div class="btn-actions-mini">
                                         <button class="btn-mini btn-individual-collect" onclick='collectPaymentBulk(["${p.paymentId}"], "${m.memberName}", ${p.amount})'>回収</button>
-                                        
                                         ${p.isAbsenceProcessed ? 
                                             `<span class="label-stay">積立居残</span>` : 
                                             `<button class="btn-mini btn-absence-mini" onclick="collectAbsence('${p.paymentId}', '${m.memberName}', '${p.eventName}')">欠席</button>`
@@ -266,7 +280,6 @@
             });
         }
 
-        // CSVダウンロード
         function downloadCSVSummary() {
             const start = document.getElementById('summary-start').value;
             const end = document.getElementById('summary-end').value;
@@ -302,7 +315,6 @@
             });
         }
 
-        // メール送信
         function sendEmailSummary() {
             const start = document.getElementById('summary-start').value;
             const end = document.getElementById('summary-end').value;
@@ -319,83 +331,4 @@
             })
             .then(res => res.json())
             .then(response => {
-                document.getElementById('loading').style.display = 'none';
-                if (response.success) {
-                    alert(`指定されたアドレスに\n集計明細CSVファイルを送信しました！`);
-                } else {
-                    alert("送信エラー: " + response.error);
-                }
-            });
-        }
-
-        // 回収処理（一括・個別兼用）
-        function collectPaymentBulk(paymentIds, name, amount) {
-            const isBulk = paymentIds.length > 1;
-            const msg = isBulk ? 
-                `${name} さんから総額 ${amount.toLocaleString()} 円を一括回収しましたか？\n内訳データをすべて「済」にします。` :
-                `${name} さんからこのイベントの分（${amount.toLocaleString()} 円）だけを回収しましたか？`;
-
-            if (confirm(msg)) {
-                document.getElementById('loading').style.display = 'block';
-                fetch(GAS_WEB_APP_URL, {
-                    method: "POST",
-                    body: JSON.stringify({ action: 'recordPayment', paymentIds: paymentIds })
-                })
-                .then(res => res.json())
-                .then(response => {
-                    if (response.success) { alert("回収を記録しました！"); location.reload(); }
-                });
-            }
-        }
-
-        // 欠席処理
-        function collectAbsence(paymentId, name, eventName) {
-            if (confirm(`${name} さんの「${eventName}」を欠席にしますか？\nこのイベントの請求を設定された積立金に変更し、未払いで次回へ繰り越します。`)) {
-                document.getElementById('loading').style.display = 'block';
-                fetch(GAS_WEB_APP_URL, {
-                    method: "POST",
-                    body: JSON.stringify({ action: 'recordAbsence', paymentId: paymentId })
-                })
-                .then(res => res.json())
-                .then(response => {
-                    if (response.success) { alert("欠席（積立金保留）を記録しました！"); location.reload(); }
-                });
-            }
-        }
-
-        // 新規イベント登録
-        function submitNewEvent() {
-            const name = document.getElementById('event-name').value;
-            const date = document.getElementById('event-date').value;
-            const amount = document.getElementById('event-amount').value;
-            const saveAmount = document.getElementById('event-save-amount').value; // ★積立金取得
-            
-            if (!name || !date || !amount || !saveAmount) { alert("すべての項目を入力してください！"); return; }
-
-            if (confirm(`「${name}」（会費:${Number(amount).toLocaleString()}円 / 積立:${Number(saveAmount).toLocaleString()}円）を登録します。よろしいですか？`)) {
-                document.getElementById('loading').style.display = 'block';
-                document.getElementById('admin-view').style.display = 'none';
-                fetch(GAS_WEB_APP_URL, {
-                    method: "POST",
-                    body: JSON.stringify({ 
-                        action: 'createEvent', 
-                        eventName: name, 
-                        eventDate: date, 
-                        amount: amount,
-                        saveAmount: saveAmount // ★送信
-                    })
-                })
-                .then(res => res.json())
-                .then(response => {
-                    if(response.success) { alert(`登録完了！`); location.reload(); }
-                });
-            }
-        }
-        
-        function switchToUserView() {
-            document.getElementById('admin-view').style.display = 'none';
-            document.getElementById('user-view').style.display = 'block';
-        }
-    </script>
-</body>
-</html>
+                document.getElementById('loading
