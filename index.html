@@ -38,7 +38,6 @@
         .btn-individual-collect { background-color: #ff9800; color: white; }
         .btn-absence-mini { background-color: #2196F3; color: white; }
         
-        /* 🏷️ バッジの色を「未払」用に少し調整（警告色） */
         .label-stay { color: #d32f2f; font-size: 12px; font-weight: bold; background: #ffebee; padding: 3px 8px; border-radius: 4px; }
         
         .btn-collect { background-color: #ff5722; padding: 12px; font-size: 16px; margin-top: 10px; }
@@ -72,7 +71,7 @@
                 <p style="padding: 20px; color: #888; text-align: center; margin: 0;">履歴はありません</p>
             </div>
         </div>
-        <button class="btn-sub" onclick="liff.closeWindow()">アプリを閉じる</button>
+        <button class="btn-sub" onclick="liff.closeWindow()">閉じる</button>
     </div>
 
     <div id="admin-view" class="container">
@@ -242,12 +241,12 @@
             }
             let html = '<ul class="history-list">';
             historyItems.forEach(item => {
-                let dateStr = item.eventDate ? new Date(item.eventDate).toLocaleDateString('ja-JP') : "";
+                let dateStr = item.paidDate ? new Date(item.paidDate).toLocaleDateString('ja-JP') : "日付不明";
                 html += `
                     <li class="history-item">
                         <div class="history-info">
                             <strong>${item.eventName}</strong><br>
-                            <span style="font-size:12px; color:#666;">${dateStr}</span>
+                            <span style="font-size:12px; color:#666;">支払日:${dateStr}</span>
                         </div>
                         <div style="font-weight:bold; color:#06C755; font-size:17px;">${Number(item.amount).toLocaleString()} 円</div>
                     </li>
