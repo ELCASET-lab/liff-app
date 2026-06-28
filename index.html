@@ -60,7 +60,6 @@
         <div class="role-badge role-user">メンバー</div>
         <h1><span class="user-name"></span> さん</h1>
         
-        <!-- 🌟【新設】休会中メンバー用のアラート -->
         <div id="user-suspend-badge" style="display:none; background:#ff9800; color:white; padding:12px; border-radius:8px; font-weight:bold; text-align:center; margin-bottom:15px; font-size: 15px;">
             ☕ 現在「休会中」です<br><span style="font-size:12px; font-weight:normal;">今後の集金の対象外となっています</span>
         </div>
@@ -94,15 +93,6 @@
             </div>
         </div>
 
-        <!-- 🌟【新設】メンバー・ステータス管理パネル -->
-        <div class="panel-box" style="border-style: solid; border-color: #ddd;">
-            <h3 style="border-left-color: #2196F3;">👥 メンバー管理</h3>
-            <p style="font-size: 12px; color: #666; margin-top: -8px; margin-bottom: 10px;">休会・退会にすると以降の新規集金の対象から外れます。</p>
-            <div id="member-list-container" style="background: #fff; border: 1px solid #eee; border-radius: 8px; max-height: 250px; overflow-y: auto;">
-                <p style="text-align:center; color:#888; padding: 15px;">読み込み中...</p>
-            </div>
-        </div>
-
         <div class="panel-box" style="border-style: dashed; background-color: #fff;">
             <h3>🍻 新規登録</h3>
             <div class="form-group">
@@ -124,6 +114,14 @@
                 </div>
             </div>
             <button onclick="submitNewEvent()">この内容で集金開始</button>
+        </div>
+
+        <div class="panel-box" style="border-style: solid; border-color: #ddd;">
+            <h3 style="border-left-color: #2196F3;">👥 メンバー管理</h3>
+            <p style="font-size: 12px; color: #666; margin-top: -8px; margin-bottom: 10px;">休会・退会にすると以降の新規集金の対象から外れます。</p>
+            <div id="member-list-container" style="background: #fff; border: 1px solid #eee; border-radius: 8px; max-height: 250px; overflow-y: auto;">
+                <p style="text-align:center; color:#888; padding: 15px;">読み込み中...</p>
+            </div>
         </div>
 
         <div class="panel-box">
@@ -150,7 +148,6 @@
 
     <script>
         const MY_LIFF_ID = "2010432252-75FYrhvD"; 
-        // ⚠️【超重要】あなたのGASの「ウェブアプリURL」をここに貼り付け直してください
         const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxFs7FRgENnnx8YlFVjFrX57hpGlOYO4L1acSHX0upyrKRT_Nr7EYO-8UJB1pzcuzwH/exec"; 
 
         liff.init({ liffId: MY_LIFF_ID })
@@ -197,7 +194,6 @@
                 nameElements[i].innerText = userInfo.name;
             }
 
-            // 🌟休会中アラートの表示制御
             if (userInfo.status === '休会') {
                 document.getElementById('user-suspend-badge').style.display = 'block';
             } else {
@@ -211,7 +207,7 @@
             if (userInfo.role === 'admin') {
                 document.getElementById('admin-view').style.display = 'block';
                 loadUnpaidList();
-                loadMemberList(); // 🌟管理リストの読込を実行
+                loadMemberList();
                 
                 if(!document.getElementById('summary-start').value) {
                     const today = new Date();
@@ -287,7 +283,6 @@
             historyContainer.innerHTML = html;
         }
 
-        // 🌟【新設】メンバーのステータス管理リストを描画する
         function loadMemberList() {
             fetch(GAS_WEB_APP_URL, {
                 method: "POST",
@@ -317,7 +312,6 @@
             });
         }
 
-        // 🌟【新設】ステータス変更アクション（バックエンドに通信して爆速更新）
         function changeMemberStatus(userId, name, newStatus) {
             let msg = `${name} さんのステータスを「${newStatus}」に変更しますか？\n（今後の新規集金の対象から外れます）`;
             if (newStatus === '退会') {
@@ -334,15 +328,14 @@
                 .then(response => {
                     if (response.success) {
                         alert("変更を保存しました！");
-                        refreshAllData(); // 画面を爆速でサイレント再取得
+                        refreshAllData(); 
                     } else {
                         document.getElementById('loading').style.display = 'none';
                         alert("エラー: " + response.error);
                     }
                 });
             } else {
-                // キャンセルされたら、セレクトボックスの見た目を元に戻すために再描画
-                loadMemberList();
+                loadMemberList(); 
             }
         }
 
@@ -366,7 +359,6 @@
                     members.forEach(m => {
                         const pIdsJson = JSON.stringify(m.payments.map(p => p.paymentId));
                         
-                        // 🌟未払リストにも「休会中」のバッジを表示
                         const badge = m.status === '休会' ? `<span style="background:#ff9800; color:#fff; font-size:11px; padding:3px 6px; border-radius:4px; margin-left:5px; vertical-align:middle;">休会中</span>` : '';
 
                         html += `
