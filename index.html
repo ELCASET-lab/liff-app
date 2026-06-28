@@ -60,22 +60,22 @@
         <div class="role-badge role-user">メンバー</div>
         <h1><span class="user-name"></span> さん</h1>
         
-        <!-- ??【新設】休会中メンバー用のアラート -->
+        <!-- 🌟【新設】休会中メンバー用のアラート -->
         <div id="user-suspend-badge" style="display:none; background:#ff9800; color:white; padding:12px; border-radius:8px; font-weight:bold; text-align:center; margin-bottom:15px; font-size: 15px;">
-            ? 現在「休会中」です<br><span style="font-size:12px; font-weight:normal;">今後の集金の対象外となっています</span>
+            ☕ 現在「休会中」です<br><span style="font-size:12px; font-weight:normal;">今後の集金の対象外となっています</span>
         </div>
 
         <p style="color:#666; margin-bottom:5px;">あなたの現在の未払合計額は...</p>
         <div id="unpaid-amount" style="font-size: 42px; font-weight: bold; color: #e53935; text-align: center; margin: 15px 0; background: #fff5f5; padding: 15px; border-radius: 8px; border: 1px solid #ffe3e3;">0 円</div>
         
         <div id="user-unpaid-details-section" style="margin-top: 20px; display: none;">
-            <h3 style="color: #444; margin-bottom: 10px; font-size: 16px; border-left: 4px solid #e53935; padding-left: 8px;">?? 未払金の内訳</h3>
+            <h3 style="color: #444; margin-bottom: 10px; font-size: 16px; border-left: 4px solid #e53935; padding-left: 8px;">📋 未払金の内訳</h3>
             <div id="user-unpaid-container" style="background: #fff; border: 1px solid #ddd; border-radius: 8px; max-height: 180px; overflow-y: auto;">
             </div>
         </div>
         
         <div style="margin-top: 25px;">
-            <h3 style="color: #444; margin-bottom: 10px; font-size: 16px;">?? あなたの支払い履歴</h3>
+            <h3 style="color: #444; margin-bottom: 10px; font-size: 16px;">📊 あなたの支払い履歴</h3>
             <div id="history-container" style="background: #fff; border: 1px solid #ddd; border-radius: 8px; max-height: 220px; overflow-y: auto;">
                 <p style="padding: 20px; color: #888; text-align: center; margin: 0;">履歴はありません</p>
             </div>
@@ -88,15 +88,15 @@
         <h1><span class="user-name"></span> さん</h1>
         
         <div style="margin-top: 20px;">
-            <h3 style="color: #444; margin-bottom: 5px; font-size: 16px;">?? 現在のメンバーの状況</h3>
+            <h3 style="color: #444; margin-bottom: 5px; font-size: 16px;">💰 現在のメンバーの状況</h3>
             <div id="unpaid-list-container" style="max-height: 320px; overflow-y: auto; padding: 2px;">
                 <p style="padding: 20px; color: #888; text-align: center; background: #fff; border-radius: 8px; border:1px solid #ddd;">未払いのメンバーはいません</p>
             </div>
         </div>
 
-        <!-- ??【新設】メンバー・ステータス管理パネル -->
+        <!-- 🌟【新設】メンバー・ステータス管理パネル -->
         <div class="panel-box" style="border-style: solid; border-color: #ddd;">
-            <h3 style="border-left-color: #2196F3;">?? メンバー管理</h3>
+            <h3 style="border-left-color: #2196F3;">👥 メンバー管理</h3>
             <p style="font-size: 12px; color: #666; margin-top: -8px; margin-bottom: 10px;">休会・退会にすると以降の新規集金の対象から外れます。</p>
             <div id="member-list-container" style="background: #fff; border: 1px solid #eee; border-radius: 8px; max-height: 250px; overflow-y: auto;">
                 <p style="text-align:center; color:#888; padding: 15px;">読み込み中...</p>
@@ -104,7 +104,7 @@
         </div>
 
         <div class="panel-box" style="border-style: dashed; background-color: #fff;">
-            <h3>?? 新規登録</h3>
+            <h3>🍻 新規登録</h3>
             <div class="form-group">
                 <label>イベント名</label>
                 <input type="text" id="event-name">
@@ -127,7 +127,7 @@
         </div>
 
         <div class="panel-box">
-            <h3>?? 期間データを出力</h3>
+            <h3>📊 期間データを出力</h3>
             <div class="grid-1">
                 <div class="form-group">
                     <label>始期（開始日）</label>
@@ -142,7 +142,7 @@
                 <label>送信先メールアドレス</label>
                 <input type="email" id="summary-email" placeholder="example@gmail.com">
             </div>
-            <button class="btn-email" onclick="sendEmailSummary()">?? 指定アドレスにCSVを送信</button>
+            <button class="btn-email" onclick="sendEmailSummary()">📧 指定アドレスにCSVを送信</button>
         </div>
 
         <button class="btn-sub" onclick="switchToUserView()">メンバー権限で表示</button>
@@ -150,7 +150,7 @@
 
     <script>
         const MY_LIFF_ID = "2010432252-75FYrhvD"; 
-        // ??【超重要】あなたのGASの「ウェブアプリURL」をここに貼り付け直してください
+        // ⚠️【超重要】あなたのGASの「ウェブアプリURL」をここに貼り付け直してください
         const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxFs7FRgENnnx8YlFVjFrX57hpGlOYO4L1acSHX0upyrKRT_Nr7EYO-8UJB1pzcuzwH/exec"; 
 
         liff.init({ liffId: MY_LIFF_ID })
@@ -197,7 +197,7 @@
                 nameElements[i].innerText = userInfo.name;
             }
 
-            // ??休会中アラートの表示制御
+            // 🌟休会中アラートの表示制御
             if (userInfo.status === '休会') {
                 document.getElementById('user-suspend-badge').style.display = 'block';
             } else {
@@ -211,7 +211,7 @@
             if (userInfo.role === 'admin') {
                 document.getElementById('admin-view').style.display = 'block';
                 loadUnpaidList();
-                loadMemberList(); // ??管理リストの読込を実行
+                loadMemberList(); // 🌟管理リストの読込を実行
                 
                 if(!document.getElementById('summary-start').value) {
                     const today = new Date();
@@ -287,7 +287,7 @@
             historyContainer.innerHTML = html;
         }
 
-        // ??【新設】メンバーのステータス管理リストを描画する
+        // 🌟【新設】メンバーのステータス管理リストを描画する
         function loadMemberList() {
             fetch(GAS_WEB_APP_URL, {
                 method: "POST",
@@ -317,11 +317,11 @@
             });
         }
 
-        // ??【新設】ステータス変更アクション（バックエンドに通信して爆速更新）
+        // 🌟【新設】ステータス変更アクション（バックエンドに通信して爆速更新）
         function changeMemberStatus(userId, name, newStatus) {
             let msg = `${name} さんのステータスを「${newStatus}」に変更しますか？\n（今後の新規集金の対象から外れます）`;
             if (newStatus === '退会') {
-                msg += '\n\n??【注意】退会にするとアプリ上からは姿が消え、元に戻せなくなります！（※スプレッドシートを直接編集すれば復帰可能です）';
+                msg += '\n\n⚠️【注意】退会にするとアプリ上からは姿が消え、元に戻せなくなります！（※スプレッドシートを直接編集すれば復帰可能です）';
             }
             
             if (confirm(msg)) {
@@ -358,7 +358,7 @@
                     const members = response.data;
                     
                     if (members.length === 0) {
-                        listContainer.innerHTML = '<p style="padding: 20px; color: #888; text-align: center; margin: 0; background:#fff; border:1px solid #ddd; border-radius:8px;">未払いのメンバーはいません ??</p>';
+                        listContainer.innerHTML = '<p style="padding: 20px; color: #888; text-align: center; margin: 0; background:#fff; border:1px solid #ddd; border-radius:8px;">未払いのメンバーはいません 🎉</p>';
                         return;
                     }
                     
@@ -366,7 +366,7 @@
                     members.forEach(m => {
                         const pIdsJson = JSON.stringify(m.payments.map(p => p.paymentId));
                         
-                        // ??未払リストにも「休会中」のバッジを表示
+                        // 🌟未払リストにも「休会中」のバッジを表示
                         const badge = m.status === '休会' ? `<span style="background:#ff9800; color:#fff; font-size:11px; padding:3px 6px; border-radius:4px; margin-left:5px; vertical-align:middle;">休会中</span>` : '';
 
                         html += `
@@ -395,7 +395,7 @@
                         
                         html += `
                                 </div>
-                                <button class="btn-collect" onclick='collectPaymentBulk(${pIdsJson}, "${m.memberName}", ${m.totalAmount})'>?? 総額を一括回収する</button>
+                                <button class="btn-collect" onclick='collectPaymentBulk(${pIdsJson}, "${m.memberName}", ${m.totalAmount})'>💸 総額を一括回収する</button>
                             </div>
                         `;
                     });
